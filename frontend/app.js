@@ -442,7 +442,7 @@ async function applyColor(opts = {}) {
 function showBA(on) {
   $("#baRow").hidden = !on;
   if (!on) { $("#baOrig")?.remove(); S.baShown = false; return; }
-  if (!S.baShown) { $("#baRange").value = 100; S.baShown = true; }
+  if (!S.baShown) { $("#baRange").value = 50; S.baShown = true; }
   updateBA();
 }
 
