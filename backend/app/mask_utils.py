@@ -59,17 +59,24 @@ def refine_mask(
     wall_std = float(np.std(Lc[ref_region > 0])) + 1e-3
 
     # هرچه روشنایی از دیوار دورتر باشد، کمتر جزو دیوار است
-    tol = max(22.0, 2.2 * wall_std)
+    tol = float(np.clip(2.0 * wall_std, 18.0, 34.0))
     diff = np.abs(Lc - wall_L)
-    lum_gate = np.clip(1.0 - (diff - tol) / (tol * 1.6), 0.0, 1.0)
+    lum_gate = np.clip(1.0 - (diff - tol) / (tol * 1.4), 0.0, 1.0)
 
-    # کمی تو رفتن از لبه‌ی سختِ ماسک
-    eroded = cv2.erode(binary, kernel, iterations=1).astype(np.float32)
-    soft = np.minimum(eroded, lum_gate).astype(np.float32)
+    # تو رفتن از لبه‌ی سختِ ماسک (بالای تصویر بیشتر — سرریز معمولاً روی سقف است)
+    eroded = cv2.erode(binary, kernel, iterations=2).astype(np.float32)
+    soft = np.minimum(eroded, lum_gate)
+
+    # حذف تکه‌های کوچکِ جدا افتاده بعد از دروازه‌ی روشنایی
+    bwith = (soft > 0.4).astype(np.uint8)
+    nn, lab2, st2, _ = cv2.connectedComponentsWithStats(bwith, connectivity=8)
+    if nn > 1:
+        big = {i + 1 for i in range(nn - 1) if st2[i + 1, cv2.CC_STAT_AREA] >= 0.003 * h * w}
+        soft = soft * np.isin(lab2, list(big)).astype(np.float32)
 
     # چسباندن لبه به تصویر
     guide = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
-    radius = max(6, min(h, w) // 90)
+    radius = max(5, min(h, w) // 110)
     if _has_guided():
         try:
             soft = cv2.ximgproc.guidedFilter(guide, soft, radius, 2e-4)
