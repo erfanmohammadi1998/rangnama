@@ -13,6 +13,7 @@ const S = {
   sceneName: null,
   color: null,           // { code, name, hex, product }
   lighting: "natural",
+  strength: 1.0,
   tool: "none",
   brush: 34,
   layers: [],            // [{code,name,hex, maskURL}]
@@ -91,11 +92,27 @@ function renderSwatches() {
     el.onclick = () => selectColor(c);
     wrap.appendChild(el);
   });
+  renderQuickColors();
+}
+
+function renderQuickColors() {
+  const wrap = $("#quickColors");
+  if (!wrap || !S.catalog) return;
+  wrap.innerHTML = "";
+  visibleColors().slice(0, 16).forEach((c) => {
+    const b = document.createElement("button");
+    b.style.background = c.hex;
+    b.title = `${c.name} — ${c.code}`;
+    b.className = S.color && S.color.code === c.code ? "active" : "";
+    b.onclick = () => { selectColor(c); applyColor(); };
+    wrap.appendChild(b);
+  });
 }
 
 function selectColor(c) {
   S.color = c;
   renderSwatches();
+  renderQuickColors();
   $("#selected").hidden = false;
   $("#selChip").style.background = c.hex;
   $("#selName").textContent = c.name;
@@ -204,6 +221,9 @@ function enterEditor() {
   $("#btnAddWall").hidden = true;
   $("#appliedList").innerHTML = "";
   $("#resultActions").hidden = true;
+  $("#stageControls").hidden = false;
+  $$("#stageControls .sc-group:not(.grow)").forEach((g) => (g.hidden = S.mode === "scene"));
+  renderQuickColors();
   showBA(false);
   ensureFsButton();
 }
@@ -346,6 +366,7 @@ async function applyColor() {
     fd.append("image", await canvasBlob(S.orig));
     fd.append("code", S.color.code);
     fd.append("lighting", S.lighting);
+    fd.append("strength", String(S.strength));
     fd.append("mask", await maskBlob());
     const res = await fetch("/api/visualize", { method: "POST", body: fd });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || "خطا در پردازش");
@@ -736,8 +757,18 @@ function wire() {
   $$("#lighting button").forEach((b) => (b.onclick = () => {
     S.lighting = b.dataset.l;
     $$("#lighting button").forEach((x) => x.classList.toggle("active", x === b));
-    if (S.resultURL) (S.layers.length ? renderMulti() : applyColor());
+    if (S.resultURL && S.mode !== "scene") (S.layers.length ? renderMulti() : applyColor());
   }));
+
+  const str = $("#strength");
+  if (str) {
+    const faNum = (n) => Number(n).toLocaleString("fa-IR");
+    str.oninput = () => { $("#strengthVal").textContent = faNum(str.value) + "٪"; };
+    str.onchange = () => {
+      S.strength = +str.value / 100;
+      if (S.resultURL && S.mode !== "scene" && !S.layers.length) applyColor();
+    };
+  }
 
   $$(".tab").forEach((t) => (t.onclick = () => {
     $$(".tab").forEach((x) => x.classList.toggle("active", x === t));

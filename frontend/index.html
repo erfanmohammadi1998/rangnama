@@ -110,6 +110,26 @@
           <input type="range" id="baRange" min="0" max="100" value="50" />
           <span>بعد</span>
         </div>
+
+        <div class="stage-controls" id="stageControls" hidden>
+          <div class="sc-group">
+            <span class="sc-label">حالت نور محیط</span>
+            <div class="segmented" id="lighting">
+              <button data-l="natural" class="active">طبیعی</button>
+              <button data-l="warm">گرم</button>
+              <button data-l="cool">سرد</button>
+              <button data-l="evening">شب</button>
+            </div>
+          </div>
+          <div class="sc-group">
+            <span class="sc-label">شدت رنگ <b id="strengthVal">۱۰۰٪</b></span>
+            <input type="range" id="strength" min="40" max="100" value="100" />
+          </div>
+          <div class="sc-group grow">
+            <span class="sc-label">امتحان سریع رنگ</span>
+            <div class="quick-colors" id="quickColors"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -133,16 +153,6 @@
           <div class="sel-meta">
             <div class="sel-name" id="selName">—</div>
             <div class="sel-code" id="selCode">—</div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>حالت نور محیط</label>
-          <div class="segmented" id="lighting">
-            <button data-l="natural" class="active">طبیعی</button>
-            <button data-l="warm">گرم</button>
-            <button data-l="cool">سرد</button>
-            <button data-l="evening">شب</button>
           </div>
         </div>
 
