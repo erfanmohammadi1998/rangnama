@@ -277,6 +277,8 @@ button, input, textarea, select { font-family: inherit; }
 .sc-label { font-size: 11.5px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 .sc-label b { color: var(--accent); font-variant-numeric: tabular-nums; }
 .sc-group #strength { width: 150px; accent-color: var(--accent); }
+.stage-controls .segmented button { white-space: nowrap; padding: 7px 10px; }
+.stage-controls .segmented { flex-wrap: wrap; }
 .quick-colors { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
 .quick-colors button {
   flex: 0 0 30px; height: 30px; border-radius: 8px; cursor: pointer;

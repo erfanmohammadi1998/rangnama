@@ -14,9 +14,10 @@ const S = {
   color: null,           // { code, name, hex, product }
   lighting: "natural",
   strength: 1.0,
+  surface: "wall",       // wall | wall_ceiling | ceiling
   tool: "none",
   brush: 34,
-  layers: [],            // [{code,name,hex, maskURL}]
+  baShown: false,
   resultURL: null,
   catalog: null,
   filterFamily: null,
@@ -137,7 +138,7 @@ async function useFile(file) {
   cv.getContext("2d").drawImage(bmp, 0, 0, w, h);
   S.mode = "photo";
   S.orig = cv; S.W = w; S.H = h;
-  S.layers = []; S.resultURL = null; S.svg = null; S.sceneName = null;
+  S.resultURL = null; S.svg = null; S.sceneName = null; S.baShown = false;
   enterEditor();
   await autoMask();
 }
@@ -154,7 +155,7 @@ async function useScene(name) {
   S.mode = "scene";
   S.svg = svg; S.sceneName = name;
   S.W = 1200; S.H = 900;
-  S.layers = []; S.resultURL = null; S.mask = null;
+  S.resultURL = null; S.mask = null; S.baShown = false;
   enterEditor();
   setTool("none");
   $("#toolbar").querySelectorAll(".tool, #btnAuto").forEach((b) => (b.style.display = "none"));
@@ -218,8 +219,6 @@ function enterEditor() {
   $("#editor").hidden = false;
   $("#toolbar").querySelectorAll(".tool, #btnAuto").forEach((b) => (b.style.display = ""));
   sizeCanvases();
-  $("#btnAddWall").hidden = true;
-  $("#appliedList").innerHTML = "";
   $("#resultActions").hidden = true;
   $("#stageControls").hidden = false;
   $$("#stageControls .sc-group:not(.grow)").forEach((g) => (g.hidden = S.mode === "scene"));
@@ -270,6 +269,7 @@ async function autoMask() {
   try {
     const fd = new FormData();
     fd.append("image", await canvasBlob(S.orig));
+    fd.append("part", S.surface);
     const res = await fetch("/api/mask", { method: "POST", body: fd });
     if (!res.ok) throw new Error("تشخیص دیوار ناموفق بود");
     const bmp = await createImageBitmap(await res.blob());
@@ -335,11 +335,9 @@ function endPaint() {
   if (!painting) return;
   painting = false;
   // بعد از رها کردن قلم، اگر قبلاً رنگ اعمال شده، خودکار به‌روزرسانی کن
-  if (S.mode === "photo" && S.color && (S.resultURL || S.layers.length)) {
+  if (S.mode === "photo" && S.color && S.resultURL) {
     clearTimeout(_brushApply);
-    _brushApply = setTimeout(() => {
-      S.layers.length ? renderMulti() : applyColor({ keepTool: true });
-    }, 500);
+    _brushApply = setTimeout(() => applyColor({ keepTool: true }), 500);
   }
 }
 
@@ -388,7 +386,6 @@ async function applyColor(opts = {}) {
     flashReveal();
     showBA(true);
     $("#resultActions").hidden = false;
-    $("#btnAddWall").hidden = false;
     if (opts.keepTool && S.tool !== "none") {
       redrawMask();
       toast("به‌روزرسانی شد — می‌توانی باز هم اصلاح کنی");
@@ -403,71 +400,13 @@ async function applyColor(opts = {}) {
   }
 }
 
-function addWallLayer() {
-  if (!S.color || !S.mask) return;
-  const url = maskDataURL();
-  S.layers.push({ ...S.color, maskURL: url });
-  S.mask = new Uint8ClampedArray(S.W * S.H);
-  renderLayers();
-  setTool("add");
-  toast("دیوار بعدی را با قلم مشخص کن و رنگش را انتخاب کن");
-}
-
-function renderLayers() {
-  const box = $("#appliedList");
-  box.innerHTML = "";
-  S.layers.forEach((l, idx) => {
-    const row = document.createElement("div");
-    row.className = "layer";
-    row.innerHTML = `<i style="background:${l.hex}"></i> ${l.name} — ${l.code}`;
-    const del = document.createElement("button");
-    del.className = "btn tiny ghost";
-    del.textContent = "حذف";
-    del.onclick = () => { S.layers.splice(idx, 1); renderLayers(); renderMulti(); };
-    row.appendChild(del);
-    box.appendChild(row);
-  });
-  renderMulti();
-}
-
-async function renderMulti() {
-  if (!S.layers.length) { draw(S.orig); showBA(false); return; }
-  spin(true);
-  try {
-    const layers = [...S.layers];
-    if (S.color && S.mask && S.mask.some((v) => v)) {
-      layers.push({ ...S.color, maskURL: maskDataURL() });
-    }
-    const body = {
-      image: S.orig.toDataURL("image/jpeg", 0.92),
-      lighting: S.lighting,
-      layers: layers.map((l) => ({ code: l.code, mask: l.maskURL })),
-    };
-    const res = await fetch("/api/visualize-multi", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error("خطا در ترکیب دیوارها");
-    const blob = await res.blob();
-    setResultURL(URL.createObjectURL(blob));
-    draw(await createImageBitmap(blob));
-    flashReveal();
-    showBA(true);
-    $("#resultActions").hidden = false;
-  } catch (e) {
-    toast(e.message, true);
-  } finally {
-    spin(false);
-  }
-}
-
 /* ---------------- Before / After ---------------- */
 
 function showBA(on) {
   $("#baRow").hidden = !on;
-  if (on) { $("#baRange").value = 55; updateBA(); }
-  else { photoCanvas.style.clipPath = "none"; $("#baOrig")?.remove(); }
+  if (!on) { $("#baOrig")?.remove(); S.baShown = false; return; }
+  if (!S.baShown) { $("#baRange").value = 100; S.baShown = true; }
+  updateBA();
 }
 
 function updateBA() {
@@ -476,14 +415,11 @@ function updateBA() {
   if (!orig) {
     orig = document.createElement("canvas");
     orig.id = "baOrig";
-    orig.width = S.W; orig.height = S.H;
-    orig.getContext("2d").drawImage(S.orig, 0, 0, S.W, S.H);
     photoCanvas.parentElement.insertBefore(orig, maskCanvas);
-  } else {
-    orig.width = S.W; orig.height = S.H;
-    orig.getContext("2d").drawImage(S.orig, 0, 0, S.W, S.H);
   }
-  // سمت راست تصویر = «قبل»
+  orig.width = S.W; orig.height = S.H;
+  orig.getContext("2d").drawImage(S.orig, 0, 0, S.W, S.H);
+  // v=100 → فقط نتیجه؛ v=0 → فقط تصویر اصلی. سمت چپ = قبل.
   orig.style.clipPath = `inset(0 0 0 ${v}%)`;
 }
 $("#baRange").addEventListener("input", updateBA);
@@ -617,8 +553,7 @@ async function makeCard() {
   c.font = "700 28px Vazirmatn, sans-serif";
   c.fillText("رنگ‌های انتخابی", 1040, y);
   y += 20;
-  const used = [...S.layers];
-  if (S.color) used.push(S.color);
+  const used = S.color ? [S.color] : [];
   const uniq = [...new Map(used.map((u) => [u.code, u])).values()];
   uniq.forEach((u) => {
     y += 46;
@@ -761,7 +696,6 @@ function wire() {
 
   $("#search").oninput = renderSwatches;
   $("#btnApply").onclick = applyColor;
-  $("#btnAddWall").onclick = addWallLayer;
   $("#btnDownload").onclick = () => {
     const a = document.createElement("a");
     a.href = S.resultURL || S.orig.toDataURL();
@@ -773,7 +707,15 @@ function wire() {
   $$("#lighting button").forEach((b) => (b.onclick = () => {
     S.lighting = b.dataset.l;
     $$("#lighting button").forEach((x) => x.classList.toggle("active", x === b));
-    if (S.resultURL && S.mode !== "scene") (S.layers.length ? renderMulti() : applyColor());
+    if (S.resultURL && S.mode !== "scene") applyColor({ keepTool: true });
+  }));
+
+  $$("#surface button").forEach((b) => (b.onclick = async () => {
+    S.surface = b.dataset.p;
+    $$("#surface button").forEach((x) => x.classList.toggle("active", x === b));
+    if (S.mode !== "photo") return;
+    await autoMask();               // ماسک متناسب با سطح انتخابی
+    if (S.color) applyColor({ keepTool: true });
   }));
 
   const str = $("#strength");
@@ -782,7 +724,7 @@ function wire() {
     str.oninput = () => { $("#strengthVal").textContent = faNum(str.value) + "٪"; };
     str.onchange = () => {
       S.strength = +str.value / 100;
-      if (S.resultURL && S.mode !== "scene" && !S.layers.length) applyColor();
+      if (S.resultURL && S.mode !== "scene") applyColor({ keepTool: true });
     };
   }
 

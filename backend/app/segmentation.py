@@ -90,32 +90,46 @@ def _semantic_map(image: Image.Image) -> np.ndarray:
     return logits.argmax(dim=1)[0].cpu().numpy()
 
 
-# کلاس‌های ADE20K که قطعاً دیوار نیستند و رنگ نباید رویشان برود.
-# ceiling=5, floor=3, windowpane=8, door=14, painting=22, mirror=27,
+CEILING_CLASSES = (5,)  # ceiling
+
+# کلاس‌های ADE20K که قطعاً سطحِ رنگ‌شدنی نیستند.
+# floor=3, windowpane=8, door=14, painting=22, mirror=27,
 # cabinet=10, wardrobe=35, sofa=23, chair=19, curtain=18, sky=2
-NON_WALL_CLASSES = (5, 3, 8, 14, 22, 27, 10, 35, 23, 19, 18, 2)
+_NEVER_PAINT = (3, 8, 14, 22, 27, 10, 35, 23, 19, 18, 2)
 
 
-def wall_mask(image: Image.Image) -> np.ndarray:
-    """ماسک دیوار: آرایه‌ی float32 با ابعاد [H, W]، مقادیر ۰ یا ۱.
+def surface_mask(image: Image.Image, part: str = "wall") -> np.ndarray:
+    """ماسک سطحِ قابل رنگ. `part` یکی از: wall | ceiling | wall_ceiling.
 
-    علاوه بر برداشتن پیکسل‌های «دیوار»، پیکسل‌های کلاس‌های غیردیوار (سقف، کف،
-    پنجره، در، کمد…) با کمی گشادسازی از ماسک کم می‌شوند تا سرریز رنگ کنترل شود.
+    پیکسل‌های سطوحی که رنگ نمی‌گیرند (کف، در، پنجره، مبلمان…) با کمی گشادسازی
+    از ماسک کم می‌شوند تا رنگ سرریز نکند.
     """
     import cv2
 
     seg = _semantic_map(image)
-    wall = np.isin(seg, WALL_CLASSES).astype(np.uint8)
+    want: list[int] = []
+    if part in ("wall", "wall_ceiling"):
+        want += list(WALL_CLASSES)
+    if part in ("ceiling", "wall_ceiling"):
+        want += list(CEILING_CLASSES)
+    mask = np.isin(seg, want).astype(np.uint8)
 
-    non_wall = np.isin(seg, NON_WALL_CLASSES).astype(np.uint8)
-    if non_wall.any():
+    never = list(_NEVER_PAINT)
+    if part == "wall":
+        never += list(CEILING_CLASSES)  # وقتی فقط دیوار می‌خواهیم، سقف هم کنار برود
+    block = np.isin(seg, never).astype(np.uint8)
+    if block.any():
         h, w = seg.shape
         r = max(2, int(min(h, w) * 0.012))
         k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (r, r))
-        non_wall = cv2.dilate(non_wall, k, iterations=1)
-        wall = wall & (1 - non_wall)
+        block = cv2.dilate(block, k, iterations=1)
+        mask = mask & (1 - block)
+    return mask.astype(np.float32)
 
-    return wall.astype(np.float32)
+
+def wall_mask(image: Image.Image, part: str = "wall") -> np.ndarray:
+    """میان‌بر سازگار با کد قبلی."""
+    return surface_mask(image, part)
 
 
 def region_mask(image: Image.Image, x: int, y: int) -> np.ndarray:

@@ -108,13 +108,15 @@ async def api_mask(
     image: UploadFile = File(...),
     x: int | None = Form(None),
     y: int | None = Form(None),
+    part: str = Form("wall"),
 ) -> Response:
-    """ماسک دیوار به صورت PNG (سفید = دیوار). اگر x,y بدهی فقط همان دیوار."""
+    """ماسک سطح به صورت PNG (سفید = سطح). part: wall | ceiling | wall_ceiling.
+    اگر x,y بدهی فقط همان ناحیه."""
     img = _load_image(await image.read())
     if x is not None and y is not None:
         m = region_mask(img, x, y)
     else:
-        m = wall_mask(img)
+        m = wall_mask(img, part if part in ("wall", "ceiling", "wall_ceiling") else "wall")
     db.log_event("upload")
     out = Image.fromarray((np.clip(m, 0, 1) * 255).astype(np.uint8), mode="L")
     return _png(out)

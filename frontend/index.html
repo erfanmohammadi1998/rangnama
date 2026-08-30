@@ -125,6 +125,14 @@
             <span class="sc-label">شدت رنگ <b id="strengthVal">۱۰۰٪</b></span>
             <input type="range" id="strength" min="40" max="100" value="100" />
           </div>
+          <div class="sc-group">
+            <span class="sc-label">سطح رنگ‌شونده</span>
+            <div class="segmented" id="surface">
+              <button data-p="wall" class="active">دیوار</button>
+              <button data-p="wall_ceiling">دیوار + سقف</button>
+              <button data-p="ceiling">فقط سقف</button>
+            </div>
+          </div>
           <div class="sc-group grow">
             <span class="sc-label">امتحان سریع رنگ</span>
             <div class="quick-colors" id="quickColors"></div>
@@ -157,8 +165,6 @@
         </div>
 
         <button class="btn block" id="btnApply" disabled>اعمال رنگ روی دیوار</button>
-        <div class="applied" id="appliedList"></div>
-        <button class="btn ghost block" id="btnAddWall" hidden>+ رنگ دیوار بعدی</button>
 
         <div class="result-actions" id="resultActions" hidden>
           <button class="btn ghost" id="btnDownload" title="فقط همین تصویر با فرمت JPG">⬇️ دانلود عکس</button>
