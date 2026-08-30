@@ -330,7 +330,18 @@ function movePaint(ev) {
   const { x, y } = canvasPos(ev);
   paintAt(x, y);
 }
-function endPaint() { painting = false; }
+let _brushApply = null;
+function endPaint() {
+  if (!painting) return;
+  painting = false;
+  // بعد از رها کردن قلم، اگر قبلاً رنگ اعمال شده، خودکار به‌روزرسانی کن
+  if (S.mode === "photo" && S.color && (S.resultURL || S.layers.length)) {
+    clearTimeout(_brushApply);
+    _brushApply = setTimeout(() => {
+      S.layers.length ? renderMulti() : applyColor({ keepTool: true });
+    }, 500);
+  }
+}
 
 maskCanvas.addEventListener("mousedown", startPaint);
 maskCanvas.addEventListener("mousemove", movePaint);
@@ -340,9 +351,9 @@ maskCanvas.addEventListener("touchmove", movePaint, { passive: false });
 window.addEventListener("touchend", endPaint);
 
 const TOOL_HINTS = {
-  none: "قلم خاموش است. برای اصلاح نواحیِ رنگ‌شده یکی از حالت‌های «افزودن» یا «پاک‌کردن» را بزن.",
-  add: "🖌 روی هر جایی از دیوار که رنگ نخورده بکش تا به ناحیهٔ رنگ اضافه شود.",
-  erase: "🩹 روی هر چیزی که اشتباهی رنگ خورده (کمد، قاب، مبل) بکش تا از ناحیهٔ رنگ حذف شود.",
+  none: "قلم خاموش است. برای اصلاح، «افزودن دیوار» یا «پاک‌کردن» را بزن.",
+  add: "🖌 روی دیواری که رنگ نخورده بکش. وقتی قلم را رها کنی، خودکار اعمال می‌شود.",
+  erase: "🩹 روی جایی که اشتباهی رنگ خورده بکش. وقتی قلم را رها کنی، خودکار اعمال می‌شود.",
 };
 
 function setTool(t) {
@@ -357,7 +368,7 @@ function setTool(t) {
 
 /* ---------------- Apply color ---------------- */
 
-async function applyColor() {
+async function applyColor(opts = {}) {
   if (S.mode === "scene") { applySceneColor(); return; }
   if (!S.color || !S.mask) return;
   spin(true);
@@ -375,11 +386,16 @@ async function applyColor() {
     const bmp = await createImageBitmap(blob);
     draw(bmp);
     flashReveal();
-    setTool("none");
     showBA(true);
     $("#resultActions").hidden = false;
     $("#btnAddWall").hidden = false;
-    toast("انجام شد — نوار زیر تصویر را بکش تا قبل و بعد را ببینی");
+    if (opts.keepTool && S.tool !== "none") {
+      redrawMask();
+      toast("به‌روزرسانی شد — می‌توانی باز هم اصلاح کنی");
+    } else {
+      setTool("none");
+      toast("انجام شد — نوار زیر تصویر را بکش تا قبل و بعد را ببینی");
+    }
   } catch (e) {
     toast(e.message, true);
   } finally {
