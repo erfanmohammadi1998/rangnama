@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>رنگ‌نما — داشبورد مدیریت</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">ا</span>
+      <div><strong>داشبورد مدیریت</strong><span class="brand-sub">رنگ‌نما — آمار استفاده</span></div>
+    </div>
+    <a href="/" class="nav-link">بازگشت به برنامه</a>
+  </header>
+
+  <main class="app" style="grid-template-columns: 1fr;">
+    <section class="card" style="padding:20px;">
+      <div class="kpis" id="kpis"></div>
+
+      <h3 style="margin-top:26px;">روند استفاده — ۱۴ روز اخیر</h3>
+      <div class="bars" id="timeline"></div>
+
+      <div class="cols2">
+        <div>
+          <h3>پرطرفدارترین رنگ‌ها</h3>
+          <div id="topColors"></div>
+        </div>
+        <div>
+          <h3>آخرین درخواست‌های مشاوره</h3>
+          <div id="leads"></div>
+        </div>
+      </div>
+      <p class="hint">این داده‌ها روی همین سرور و به‌صورت محلی نگهداری می‌شوند.</p>
+    </section>
+  </main>
+
+  <style>
+    .kpis { display:grid; grid-template-columns: repeat(4,1fr); gap:14px; }
+    .kpi { background: var(--bg); border:1px solid var(--line); border-radius:14px; padding:16px; }
+    .kpi b { font-size:30px; font-weight:800; color:var(--accent); display:block; }
+    .kpi span { font-size:12.5px; color:var(--muted); }
+    .bars { display:flex; align-items:flex-end; gap:6px; height:150px; margin-top:12px;
+            border-bottom:1px solid var(--line); padding-bottom:2px; }
+    .bar { flex:1; background: var(--accent); border-radius:4px 4px 0 0; min-height:2px; opacity:.85; position:relative; }
+    .bar span { position:absolute; top:-18px; right:50%; transform:translateX(50%); font-size:10px; color:var(--muted); }
+    .cols2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:26px; }
+    .lrow { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--line); font-size:13px; }
+    @media(max-width:800px){ .kpis{grid-template-columns:repeat(2,1fr)} .cols2{grid-template-columns:1fr} }
+  </style>
+  <script src="/admin.js"></script>
+</body>
+</html>

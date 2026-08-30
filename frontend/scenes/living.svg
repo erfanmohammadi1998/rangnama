@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="Vazirmatn, sans-serif">
+  <defs>
+    <linearGradient id="wallShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.10"/>
+    </linearGradient>
+    <linearGradient id="sideShade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+
+  <!-- سقف -->
+  <rect x="0" y="0" width="1200" height="150" fill="#eceae6"/>
+  <!-- کف -->
+  <polygon points="0,720 1200,660 1200,900 0,900" fill="#c8b393"/>
+  <polygon points="0,720 1200,660 1200,720 0,780" fill="#000000" opacity="0.06"/>
+
+  <!-- دیوار کناری (پرسپکتیو) -->
+  <polygon class="wall" points="0,150 300,150 300,760 0,820" fill="#dfe4dc"/>
+  <polygon points="0,150 300,150 300,760 0,820" fill="url(#sideShade)"/>
+
+  <!-- دیوار اصلی -->
+  <polygon class="wall" points="300,150 1200,150 1200,660 300,720" fill="#e7ece3"/>
+  <polygon points="300,150 1200,150 1200,660 300,720" fill="url(#wallShade)"/>
+
+  <!-- قرنیز سقف -->
+  <polygon points="300,150 1200,150 1200,168 300,168" fill="#ffffff" opacity="0.85"/>
+  <polygon points="0,150 300,150 300,168 0,150" fill="#ffffff" opacity="0.7"/>
+
+  <!-- پنجره -->
+  <g>
+    <rect x="470" y="235" width="330" height="250" rx="6" fill="#ffffff"/>
+    <rect x="486" y="251" width="298" height="218" fill="#cfe6f2"/>
+    <polygon points="486,251 620,251 486,380" fill="#ffffff" opacity="0.45"/>
+    <line x1="635" y1="251" x2="635" y2="469" stroke="#ffffff" stroke-width="10"/>
+    <line x1="486" y1="360" x2="784" y2="360" stroke="#ffffff" stroke-width="10"/>
+  </g>
+
+  <!-- تابلو -->
+  <rect x="960" y="250" width="150" height="190" rx="4" fill="#ffffff"/>
+  <rect x="974" y="264" width="122" height="162" fill="#b9723f"/>
+  <circle cx="1010" cy="320" r="22" fill="#f0c14b"/>
+  <polygon points="974,426 1030,360 1096,426" fill="#7c4a2c"/>
+
+  <!-- مبل -->
+  <g>
+    <rect x="360" y="545" width="470" height="150" rx="26" fill="#8a8f7c"/>
+    <rect x="345" y="500" width="90" height="200" rx="24" fill="#9aa08c"/>
+    <rect x="770" y="500" width="90" height="200" rx="24" fill="#9aa08c"/>
+    <rect x="380" y="520" width="180" height="90" rx="16" fill="#a7ad98"/>
+    <rect x="600" y="520" width="180" height="90" rx="16" fill="#a7ad98"/>
+    <rect x="380" y="690" width="450" height="40" rx="10" fill="#5f6353"/>
+  </g>
+
+  <!-- میز جلومبلی -->
+  <ellipse cx="600" cy="800" rx="150" ry="34" fill="#7c5a3a"/>
+  <rect x="455" y="790" width="290" height="20" rx="8" fill="#8a6642"/>
+
+  <!-- گلدان -->
+  <g>
+    <rect x="1030" y="520" width="46" height="190" rx="8" fill="#3f3f3f"/>
+    <path d="M1053 520 C1000 470 1010 380 1053 360 C1096 380 1106 470 1053 520 Z" fill="#5b8f4e"/>
+    <path d="M1053 500 C1030 450 1035 400 1053 380 C1071 400 1076 450 1053 500 Z" fill="#6fa860"/>
+  </g>
+</svg>

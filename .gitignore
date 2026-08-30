@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# مدل‌ها و کش (حجیم — داخل ریپو نمی‌روند)
+models/
+.cache/
+
+# خروجی‌های تولیدشده و نمونه‌ها
+backend/out/
+backend/samples/
+*.log
+
+# دیتابیس محلی
+*.sqlite
+*.sqlite3
+*.db
+
+# محیط
+.env
+.env.local
+
+# سیستم / ادیتور
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

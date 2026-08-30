@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # برای استقرار تجاری روی سرور شرکت، مدل با لایسنس Apache را جایگزین کن:
+      # SEG_MODEL_ID: facebook/mask2former-swin-tiny-ade-semantic
+      SEG_MODEL_ID: nvidia/segformer-b0-finetuned-ade-512-512
+    restart: unless-stopped

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>رنگ‌نما — پیش‌نمای هوشمند رنگ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">ا</span>
+      <div>
+        <strong>رنگ‌نما</strong>
+        <span class="brand-sub">پیش‌نمای هوشمند رنگ ساختمانی</span>
+      </div>
+    </div>
+    <nav class="topnav">
+      <span class="badge-ai">✦ مبتنی بر هوش مصنوعی</span>
+      <button id="themeToggle" class="icon-btn" title="تغییر تم">◑</button>
+      <a href="/admin" class="nav-link">داشبورد مدیریت</a>
+    </nav>
+  </header>
+
+  <main class="app">
+    <!-- صحنه‌ی اصلی -->
+    <section class="stage card">
+      <div id="dropzone" class="dropzone">
+        <div class="dz-icon">📷</div>
+        <p class="dz-title">عکس اتاق یا نمای ساختمان را بارگذاری کن</p>
+        <p class="dz-sub">کلیک کن، فایل را رها کن، یا با دوربین عکس بگیر</p>
+        <input type="file" id="fileInput" accept="image/*" hidden />
+        <input type="file" id="camInput" accept="image/*" capture="environment" hidden />
+        <div class="dz-actions">
+          <button class="btn" id="btnPick">انتخاب فایل</button>
+          <button class="btn ghost" id="btnCam">دوربین</button>
+        </div>
+      </div>
+
+      <div id="editor" class="editor" hidden>
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="photoCanvas"></canvas>
+          <canvas id="maskCanvas"></canvas>
+          <canvas id="resultCanvas" hidden></canvas>
+          <div class="ba-handle" id="baHandle" hidden></div>
+
+          <div id="magic" class="magic" hidden>
+            <div class="magic-scan"></div>
+            <div class="magic-grid"></div>
+            <div class="magic-core">
+              <div class="orb">
+                <span class="orb-ring"></span>
+                <span class="orb-ring"></span>
+                <span class="orb-dot"></span>
+              </div>
+              <div class="magic-status" id="magicStatus">در حال آماده‌سازی…</div>
+              <div class="magic-steps" id="magicSteps">
+                <i data-s="0"></i><i data-s="1"></i><i data-s="2"></i><i data-s="3"></i>
+              </div>
+            </div>
+            <div class="sparks" id="sparks"></div>
+          </div>
+        </div>
+
+        <div class="toolbar" id="toolbar">
+          <div class="tool-group">
+            <button class="tool active" data-tool="none" id="toolNone">نمایش</button>
+            <button class="tool" data-tool="add" id="toolAdd">➕ افزودن دیوار</button>
+            <button class="tool" data-tool="erase" id="toolErase">➖ پاک‌کردن</button>
+          </div>
+          <label class="brush">
+            قلم
+            <input type="range" id="brushSize" min="8" max="90" value="34" />
+          </label>
+          <button class="btn tiny ghost" id="btnAuto">تشخیص خودکار مجدد</button>
+          <span class="grow"></span>
+          <button class="btn tiny ghost" id="btnNew">عکس جدید</button>
+        </div>
+
+        <div class="ba-row" id="baRow" hidden>
+          <span>قبل</span>
+          <input type="range" id="baRange" min="0" max="100" value="50" />
+          <span>بعد</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- پنل کناری -->
+    <aside class="panel">
+      <div class="tabs">
+        <button class="tab active" data-tab="colors">رنگ</button>
+        <button class="tab" data-tab="calc">محاسبهٔ رنگ</button>
+        <button class="tab" data-tab="advice">مشاوره</button>
+      </div>
+
+      <!-- تب رنگ -->
+      <div class="tabpane" data-pane="colors">
+        <div class="collections" id="collections"></div>
+        <input type="search" id="search" class="input" placeholder="جستجو با کد یا نام رنگ…" />
+        <div class="families" id="families"></div>
+        <div class="swatches" id="swatches"></div>
+
+        <div class="selected" id="selected" hidden>
+          <span class="sw-chip" id="selChip"></span>
+          <div class="sel-meta">
+            <div class="sel-name" id="selName">—</div>
+            <div class="sel-code" id="selCode">—</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>حالت نور محیط</label>
+          <div class="segmented" id="lighting">
+            <button data-l="natural" class="active">طبیعی</button>
+            <button data-l="warm">گرم</button>
+            <button data-l="cool">سرد</button>
+            <button data-l="evening">شب</button>
+          </div>
+        </div>
+
+        <button class="btn block" id="btnApply" disabled>اعمال رنگ روی دیوار</button>
+        <div class="applied" id="appliedList"></div>
+        <button class="btn ghost block" id="btnAddWall" hidden>+ رنگ دیوار بعدی</button>
+
+        <div class="result-actions" id="resultActions" hidden>
+          <button class="btn" id="btnDownload">دانلود تصویر</button>
+          <button class="btn ghost" id="btnCard">کارت پیشنهاد رنگ</button>
+        </div>
+        <p class="hint">رنگ نمایش‌داده‌شده تقریبی است؛ برای انتخاب نهایی، چیپ رنگ را در نمایندگی ببینید.</p>
+      </div>
+
+      <!-- تب محاسبه -->
+      <div class="tabpane" data-pane="calc" hidden>
+        <div class="grid2">
+          <div class="field"><label>عرض اتاق (متر)</label><input class="input" id="cW" type="number" step="0.1" placeholder="۴" /></div>
+          <div class="field"><label>طول اتاق (متر)</label><input class="input" id="cL" type="number" step="0.1" placeholder="۵" /></div>
+          <div class="field"><label>ارتفاع سقف (متر)</label><input class="input" id="cH" type="number" step="0.1" value="2.9" /></div>
+          <div class="field"><label>مساحت در و پنجره (م²)</label><input class="input" id="cO" type="number" step="0.1" placeholder="۴" /></div>
+          <div class="field"><label>تعداد دست</label><input class="input" id="cCoats" type="number" min="1" max="4" value="2" /></div>
+          <div class="field"><label>قیمت هر لیتر (تومان، اختیاری)</label><input class="input" id="cPrice" type="number" step="1000" placeholder="—" /></div>
+        </div>
+        <button class="btn block" id="btnCalc">محاسبه کن</button>
+        <div class="calc-result" id="calcResult" hidden></div>
+      </div>
+
+      <!-- تب مشاوره -->
+      <div class="tabpane" data-pane="advice" hidden>
+        <p class="advice-lead">برای دریافت مشاورهٔ رایگان رنگ و معرفی نزدیک‌ترین نمایندگی، اطلاعاتت را بگذار.</p>
+        <div class="field"><label>نام</label><input class="input" id="lName" /></div>
+        <div class="field"><label>شماره تماس</label><input class="input" id="lPhone" inputmode="tel" /></div>
+        <div class="field"><label>شهر</label><input class="input" id="lCity" /></div>
+        <div class="field"><label>توضیح (اختیاری)</label><textarea class="input" id="lNote" rows="2"></textarea></div>
+        <button class="btn block" id="btnLead">ثبت درخواست مشاوره</button>
+        <p class="lead-msg" id="leadMsg" hidden></p>
+      </div>
+    </aside>
+  </main>
+
+  <canvas id="cardCanvas" hidden></canvas>
+  <script src="/app.js"></script>
+</body>
+</html>

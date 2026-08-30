@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="Vazirmatn, sans-serif">
+  <defs>
+    <linearGradient id="kWall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.10"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="120" fill="#edeae5"/>
+  <polygon points="0,700 1200,700 1200,900 0,900" fill="#cbbfae"/>
+  <rect x="0" y="700" width="1200" height="14" fill="#000" opacity="0.06"/>
+
+  <!-- دیوار اصلی -->
+  <rect class="wall" x="0" y="120" width="1200" height="580" fill="#e6e9e2"/>
+  <rect x="0" y="120" width="1200" height="580" fill="url(#kWall)"/>
+  <rect x="0" y="120" width="1200" height="16" fill="#fff" opacity="0.75"/>
+
+  <!-- کابینت بالا -->
+  <rect x="60" y="180" width="520" height="150" rx="8" fill="#c7ccc4"/>
+  <line x1="320" y1="180" x2="320" y2="330" stroke="#aab0a7" stroke-width="6"/>
+  <rect x="300" y="300" width="16" height="26" rx="4" fill="#6a6f68"/>
+  <rect x="324" y="300" width="16" height="26" rx="4" fill="#6a6f68"/>
+
+  <!-- هود -->
+  <polygon points="720,180 900,180 860,300 760,300" fill="#b9bfb7"/>
+
+  <!-- بک‌اسپلش (کاشی) - بخشی از دیوار که رنگ نمی‌گیرد -->
+  <rect x="60" y="470" width="1080" height="90" fill="#dfe4dd"/>
+  <g stroke="#cfd5cd" stroke-width="3">
+    <line x1="60" y1="500" x2="1140" y2="500"/><line x1="60" y1="530" x2="1140" y2="530"/>
+  </g>
+
+  <!-- کابینت پایین + کانتر -->
+  <rect x="40" y="560" width="1120" height="30" rx="6" fill="#8a6a48"/>
+  <rect x="40" y="590" width="1120" height="150" fill="#b7bdb4"/>
+  <g fill="#9aa097">
+    <rect x="70" y="610" width="180" height="110" rx="6"/>
+    <rect x="270" y="610" width="180" height="110" rx="6"/>
+    <rect x="640" y="610" width="180" height="110" rx="6"/>
+    <rect x="840" y="610" width="180" height="110" rx="6"/>
+  </g>
+  <!-- سینک -->
+  <rect x="470" y="600" width="150" height="90" rx="10" fill="#8f958c"/>
+  <rect x="535" y="560" width="14" height="50" rx="6" fill="#6a6f68"/>
+
+  <!-- قاب پنجره‌ی آشپزخانه -->
+  <rect x="980" y="200" width="170" height="230" rx="6" fill="#ffffff"/>
+  <rect x="996" y="216" width="138" height="198" fill="#cfe6f0"/>
+  <line x1="1065" y1="216" x2="1065" y2="414" stroke="#fff" stroke-width="8"/>
+
+  <!-- ظرف گیاه روی کانتر -->
+  <rect x="360" y="500" width="40" height="60" rx="6" fill="#c98a5b"/>
+  <path d="M380 500 C350 460 356 420 380 405 C404 420 410 460 380 500 Z" fill="#5f8f52"/>
+</svg>
