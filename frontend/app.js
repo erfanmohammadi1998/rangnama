@@ -17,6 +17,8 @@ const S = {
   surface: "wall",       // wall | wall_ceiling | ceiling
   tool: "none",
   brush: 34,
+  zoom: 1, panX: 0, panY: 0,
+  origData: null,
   baShown: false,
   resultURL: null,
   catalog: null,
@@ -120,7 +122,6 @@ function selectColor(c) {
   const prod = (S.catalog.products.find((p) => p.id === c.product) || {}).name || "";
   $("#selCode").textContent = `${c.code}${prod ? " · " + prod : ""}`;
   refreshApply();
-  if (S.mode === "scene") applySceneColor();
 }
 
 /* ---------------- منبع تصویر ---------------- */
@@ -143,67 +144,34 @@ async function useFile(file) {
   await autoMask();
 }
 
+// فضاهای نمونه = عکس واقعیِ لوکس + ماسک از پیش‌محاسبه‌شده (سریع و دقیق).
 async function useScene(name) {
-  const res = await fetch(`/scenes/${name}.svg`);
-  const txt = await res.text();
-  const holder = document.createElement("div");
-  holder.innerHTML = txt;
-  const svg = holder.querySelector("svg");
-  svg.setAttribute("width", "1200");
-  svg.setAttribute("height", "900");
-  svg.removeAttribute("style");
-  S.mode = "scene";
-  S.svg = svg; S.sceneName = name;
-  S.W = 1200; S.H = 900;
-  S.resultURL = null; S.mask = null; S.baShown = false;
-  enterEditor();
-  setTool("none");
-  $("#toolbar").querySelectorAll(".tool, #btnAuto").forEach((b) => (b.style.display = "none"));
-  await rasterizeScene();
-  if (S.color) applySceneColor();
-}
-
-function svgToBlobURL(svg) {
-  let xml = new XMLSerializer().serializeToString(svg);
-  if (!xml.startsWith("<?xml")) xml = '<?xml version="1.0" encoding="UTF-8"?>' + xml;
-  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
-}
-
-function rasterizeSVG() {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const cv = document.createElement("canvas");
-      cv.width = S.W; cv.height = S.H;
-      const c = cv.getContext("2d");
-      c.fillStyle = "#ffffff";
-      c.fillRect(0, 0, S.W, S.H);
-      c.drawImage(img, 0, 0, S.W, S.H);
-      resolve(cv);
-    };
-    img.onerror = () => reject(new Error("خطا در بارگذاری فضای نمونه"));
-    img.src = svgToBlobURL(S.svg);
-  });
-}
-
-async function rasterizeScene() {
-  const cv = await rasterizeSVG();
-  S.orig = cv;
-  draw(cv);
-}
-
-async function applySceneColor() {
-  if (!S.svg || !S.color) return;
-  S.svg.querySelectorAll(".wall").forEach((el) => el.setAttribute("fill", S.color.hex));
+  spin(true);
   try {
-    const cv = await rasterizeSVG();
-    setResultURL(cv.toDataURL("image/jpeg", 0.92));
-    draw(cv);
-    flashReveal();
-    showBA(true);
-    $("#resultActions").hidden = false;
+    const bmp = await createImageBitmap(await (await fetch(`/scenes/${name}.jpg`)).blob());
+    const cv = document.createElement("canvas");
+    cv.width = bmp.width; cv.height = bmp.height;
+    cv.getContext("2d").drawImage(bmp, 0, 0);
+    S.mode = "photo";
+    S.orig = cv; S.W = bmp.width; S.H = bmp.height;
+    S.svg = null; S.sceneName = name;
+    S.resultURL = null; S.baShown = false; S.surface = "wall";
+    enterEditor();
+
+    const mbmp = await createImageBitmap(await (await fetch(`/scenes/${name}.mask.png`)).blob());
+    const t = document.createElement("canvas");
+    t.width = S.W; t.height = S.H;
+    const tc = t.getContext("2d");
+    tc.drawImage(mbmp, 0, 0, S.W, S.H);
+    const md = tc.getImageData(0, 0, S.W, S.H).data;
+    S.mask = new Uint8ClampedArray(S.W * S.H);
+    for (let i = 0; i < S.mask.length; i++) S.mask[i] = md[i * 4] > 128 ? 1 : 0;
+    setTool("none");
+    if (S.color) applyColor();
   } catch (e) {
-    toast(e.message, true);
+    toast("بارگذاری فضای نمونه ناموفق بود", true);
+  } finally {
+    spin(false);
   }
 }
 
@@ -221,7 +189,7 @@ function enterEditor() {
   sizeCanvases();
   $("#resultActions").hidden = true;
   $("#stageControls").hidden = false;
-  $$("#stageControls .sc-group:not(.grow)").forEach((g) => (g.hidden = S.mode === "scene"));
+  
   renderQuickColors();
   showBA(false);
   ensureFsButton();
@@ -229,7 +197,15 @@ function enterEditor() {
 
 function sizeCanvases() {
   [photoCanvas, maskCanvas].forEach((c) => { c.width = S.W; c.height = S.H; });
-  if (S.orig) draw(S.orig);
+  if (S.orig) {
+    draw(S.orig);
+    const t = document.createElement("canvas");
+    t.width = S.W; t.height = S.H;
+    const tc = t.getContext("2d");
+    tc.drawImage(S.orig, 0, 0);
+    S.origData = tc.getImageData(0, 0, S.W, S.H).data;
+  }
+  setZoom(1);
   redrawMask();
 }
 
@@ -252,13 +228,23 @@ function setResultURL(url) {
 function redrawMask() {
   mctx.clearRect(0, 0, S.W, S.H);
   if (!S.mask || S.tool === "none") return;
+  // ناحیهٔ ماسک با رنگِ انتخابی پیش‌نمایش می‌شود تا کاربر دقیقاً ببیند کجا رنگ می‌خورد
+  const hex = (S.color && S.color.hex) || "#3aa0ff";
+  const cr = parseInt(hex.slice(1, 3), 16);
+  const cg = parseInt(hex.slice(3, 5), 16);
+  const cb = parseInt(hex.slice(5, 7), 16);
   const img = mctx.createImageData(S.W, S.H);
+  const d = img.data;
+  const W = S.W;
   for (let i = 0; i < S.mask.length; i++) {
-    const v = S.mask[i];
-    img.data[i * 4] = 214;
-    img.data[i * 4 + 1] = 0;
-    img.data[i * 4 + 2] = 28;
-    img.data[i * 4 + 3] = v ? 90 : 0;
+    if (!S.mask[i]) continue;
+    // لبهٔ ماسک را پررنگ‌تر نشان بده
+    const x = i % W, y = (i / W) | 0;
+    const edge =
+      x === 0 || y === 0 || x === W - 1 ||
+      !S.mask[i - 1] || !S.mask[i + 1] || !S.mask[i - W] || !S.mask[i + W];
+    d[i * 4] = cr; d[i * 4 + 1] = cg; d[i * 4 + 2] = cb;
+    d[i * 4 + 3] = edge ? 235 : 120;
   }
   mctx.putImageData(img, 0, 0);
 }
@@ -302,42 +288,94 @@ function canvasPos(ev) {
   };
 }
 
+const COLOR_TOL2 = 44 * 44; // شعاع شباهت رنگ برای قلم هوشمند
+
+function _cdist2(idx, seed) {
+  const d = S.origData, o = idx * 4;
+  const r = d[o] - seed[0], g = d[o + 1] - seed[1], b = d[o + 2] - seed[2];
+  return r * r + g * g + b * b;
+}
+
+// قلم هوشمند: فقط پیکسل‌هایی را تغییر می‌دهد که رنگشان به نقطهٔ مرکز شبیه است،
+// پس روی لبهٔ کمد/قاب/مبل بکشی، فقط همان جسم انتخاب می‌شود نه دیوار کنارش.
 function paintAt(x, y) {
   if (!S.mask) S.mask = new Uint8ClampedArray(S.W * S.H);
+  x |= 0; y |= 0;
+  const W = S.W, H = S.H;
+  if (x < 0 || y < 0 || x >= W || y >= H) return;
   const rad = (S.brush / maskCanvas.getBoundingClientRect().width) * S.W;
   const val = S.tool === "add" ? 1 : 0;
-  const x0 = Math.max(0, (x - rad) | 0), x1 = Math.min(S.W, (x + rad) | 0);
-  const y0 = Math.max(0, (y - rad) | 0), y1 = Math.min(S.H, (y + rad) | 0);
+  const seed = S.origData ? [S.origData[(y * W + x) * 4], S.origData[(y * W + x) * 4 + 1], S.origData[(y * W + x) * 4 + 2]] : null;
   const r2 = rad * rad;
+  const x0 = Math.max(0, x - rad | 0), x1 = Math.min(W, x + rad | 0);
+  const y0 = Math.max(0, y - rad | 0), y1 = Math.min(H, y + rad | 0);
   for (let yy = y0; yy < y1; yy++)
     for (let xx = x0; xx < x1; xx++) {
       const dx = xx - x, dy = yy - y;
-      if (dx * dx + dy * dy <= r2) S.mask[yy * S.W + xx] = val;
+      if (dx * dx + dy * dy > r2) continue;
+      const idx = yy * W + xx;
+      if (seed && _cdist2(idx, seed) > COLOR_TOL2) continue;
+      S.mask[idx] = val;
     }
   redrawMask();
 }
 
+// یک کلیک (بدون کشیدن) = انتخاب هوشمندِ کلِ آن تکه: از نقطهٔ کلیک، ناحیهٔ هم‌رنگِ
+// متصل را دنبال می‌کند و دقیقاً همان جسم/لکه را خط‌کشی می‌کند. محدود به اطراف کلیک.
+function smartFill(x, y) {
+  if (!S.origData) { return; }
+  if (!S.mask) S.mask = new Uint8ClampedArray(S.W * S.H);
+  x |= 0; y |= 0;
+  const W = S.W, H = S.H;
+  if (x < 0 || y < 0 || x >= W || y >= H) return;
+  const seed = [S.origData[(y * W + x) * 4], S.origData[(y * W + x) * 4 + 1], S.origData[(y * W + x) * 4 + 2]];
+  const val = S.tool === "add" ? 1 : 0;
+  const reach = Math.max(70, (S.brush / maskCanvas.getBoundingClientRect().width) * S.W * 3.5);
+  const reach2 = reach * reach;
+  const seen = new Uint8Array(W * H);
+  const stack = [y * W + x];
+  let guard = 0, maxGuard = W * H;
+  while (stack.length && guard++ < maxGuard) {
+    const idx = stack.pop();
+    if (seen[idx]) continue;
+    seen[idx] = 1;
+    const ix = idx % W, iy = (idx / W) | 0;
+    const dx = ix - x, dy = iy - y;
+    if (dx * dx + dy * dy > reach2) continue;
+    if (_cdist2(idx, seed) > COLOR_TOL2 * 1.3) continue;
+    S.mask[idx] = val;
+    if (ix > 0) stack.push(idx - 1);
+    if (ix < W - 1) stack.push(idx + 1);
+    if (iy > 0) stack.push(idx - W);
+    if (iy < H - 1) stack.push(idx + W);
+  }
+  redrawMask();
+}
+
+let _downXY = null, _moved = false;
 function startPaint(ev) {
   if (S.tool === "none") return;
   ev.preventDefault();
-  painting = true;
+  painting = true; _moved = false;
   const { x, y } = canvasPos(ev);
+  _downXY = { x, y };
   paintAt(x, y);
 }
 function movePaint(ev) {
   if (!painting) return;
   ev.preventDefault();
   const { x, y } = canvasPos(ev);
+  if (_downXY && Math.hypot(x - _downXY.x, y - _downXY.y) > 5) _moved = true;
   paintAt(x, y);
 }
 let _brushApply = null;
 function endPaint() {
   if (!painting) return;
   painting = false;
-  // بعد از رها کردن قلم، اگر قبلاً رنگ اعمال شده، خودکار به‌روزرسانی کن
+  if (!_moved && _downXY) smartFill(_downXY.x, _downXY.y);
   if (S.mode === "photo" && S.color && S.resultURL) {
     clearTimeout(_brushApply);
-    _brushApply = setTimeout(() => applyColor({ keepTool: true }), 500);
+    _brushApply = setTimeout(() => applyColor({ keepTool: true }), 450);
   }
 }
 
@@ -360,14 +398,13 @@ function setTool(t) {
   maskCanvas.style.cursor = t === "none" ? "default" : "crosshair";
   maskCanvas.style.pointerEvents = t === "none" ? "none" : "auto";
   const hint = $("#toolHint");
-  if (hint) hint.textContent = S.mode === "scene" ? "" : TOOL_HINTS[t] || "";
+  if (hint) hint.textContent = TOOL_HINTS[t] || "";
   redrawMask();
 }
 
 /* ---------------- Apply color ---------------- */
 
 async function applyColor(opts = {}) {
-  if (S.mode === "scene") { applySceneColor(); return; }
   if (!S.color || !S.mask) return;
   spin(true);
   try {
@@ -504,22 +541,61 @@ function toast(msg, err) {
 }
 
 function refreshApply() {
-  $("#btnApply").disabled = !(S.color && (S.mode === "scene" || S.mask));
+  $("#btnApply").disabled = !(S.color && S.mask);
+}
+
+function setZoom(z, cx, cy) {
+  S.zoom = Math.min(4, Math.max(1, Math.round(z * 20) / 20));
+  const wrap = $("#canvasWrap");
+  wrap.style.setProperty("--zoom", S.zoom);
+  if (S.zoom === 1) { S.panX = 0; S.panY = 0; }
+  wrap.style.setProperty("--panx", (S.panX || 0) + "px");
+  wrap.style.setProperty("--pany", (S.panY || 0) + "px");
+  const zr = $("#zoomRange");
+  if (zr) zr.value = Math.round(S.zoom * 100);
 }
 
 function ensureFsButton() {
-  if ($("#fsBtn")) return;
-  const b = document.createElement("button");
-  b.id = "fsBtn";
-  b.className = "fs-btn";
-  b.title = "تمام‌صفحه";
-  b.textContent = "⛶";
-  b.onclick = () => {
-    const el = $("#canvasWrap");
+  if ($("#stageTools")) return;
+  const wrap = $("#canvasWrap");
+  const box = document.createElement("div");
+  box.id = "stageTools";
+  box.className = "stage-tools";
+  box.innerHTML = `
+    <button id="fsBtn" title="تمام‌صفحه">⛶</button>
+    <button id="zoomOut" title="کوچک‌نمایی">−</button>
+    <input type="range" id="zoomRange" min="100" max="400" value="100" title="بزرگ‌نمایی" />
+    <button id="zoomIn" title="بزرگ‌نمایی">+</button>`;
+  wrap.appendChild(box);
+
+  $("#fsBtn").onclick = () => {
     if (document.fullscreenElement) document.exitFullscreen();
-    else el.requestFullscreen?.();
+    else wrap.requestFullscreen?.();
   };
-  $("#canvasWrap").appendChild(b);
+  $("#zoomRange").oninput = (e) => setZoom(+e.target.value / 100);
+  $("#zoomIn").onclick = () => setZoom((S.zoom || 1) + 0.25);
+  $("#zoomOut").onclick = () => setZoom((S.zoom || 1) - 0.25);
+
+  wrap.addEventListener("wheel", (e) => {
+    if (!S.orig) return;
+    e.preventDefault();
+    setZoom((S.zoom || 1) + (e.deltaY < 0 ? 0.2 : -0.2));
+  }, { passive: false });
+
+  // کشیدن برای جابه‌جایی وقتی بزرگ‌نمایی فعال است و قلم خاموش است
+  let dragging = false, sx = 0, sy = 0;
+  wrap.addEventListener("mousedown", (e) => {
+    if (S.tool !== "none" || (S.zoom || 1) === 1) return;
+    dragging = true; sx = e.clientX; sy = e.clientY;
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+    S.panX = (S.panX || 0) + (e.clientX - sx);
+    S.panY = (S.panY || 0) + (e.clientY - sy);
+    sx = e.clientX; sy = e.clientY;
+    setZoom(S.zoom);
+  });
+  window.addEventListener("mouseup", () => (dragging = false));
 }
 
 /* ---------------- Proposal card ---------------- */
@@ -707,7 +783,7 @@ function wire() {
   $$("#lighting button").forEach((b) => (b.onclick = () => {
     S.lighting = b.dataset.l;
     $$("#lighting button").forEach((x) => x.classList.toggle("active", x === b));
-    if (S.resultURL && S.mode !== "scene") applyColor({ keepTool: true });
+    if (S.resultURL) applyColor({ keepTool: true });
   }));
 
   $$("#surface button").forEach((b) => (b.onclick = async () => {
@@ -724,7 +800,7 @@ function wire() {
     str.oninput = () => { $("#strengthVal").textContent = faNum(str.value) + "٪"; };
     str.onchange = () => {
       S.strength = +str.value / 100;
-      if (S.resultURL && S.mode !== "scene") applyColor({ keepTool: true });
+      if (S.resultURL) applyColor({ keepTool: true });
     };
   }
 
