@@ -12,7 +12,14 @@
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="logo">ا</span>
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="7" width="15" height="7" rx="2" fill="#fff"/>
+          <path d="M21 10.5h3.2c1 0 1.8.8 1.8 1.8V15c0 1-.8 1.8-1.8 1.8H16.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+          <rect x="13.7" y="14" width="4.6" height="4.4" rx="1" fill="#fff"/>
+          <path d="M16 18.4c1.7 1.9 2.7 3.6 2.7 5.1a2.7 2.7 0 1 1-5.4 0c0-1.5 1-3.2 2.7-5.1Z" fill="#fff"/>
+        </svg>
+      </span>
       <div>
         <strong>رنگ‌نما</strong>
         <span class="brand-sub">پیش‌نمای هوشمند رنگ ساختمانی</span>
@@ -28,15 +35,32 @@
   <main class="app">
     <!-- صحنه‌ی اصلی -->
     <section class="stage card">
-      <div id="dropzone" class="dropzone">
-        <div class="dz-icon">📷</div>
-        <p class="dz-title">عکس اتاق یا نمای ساختمان را بارگذاری کن</p>
-        <p class="dz-sub">کلیک کن، فایل را رها کن، یا با دوربین عکس بگیر</p>
-        <input type="file" id="fileInput" accept="image/*" hidden />
-        <input type="file" id="camInput" accept="image/*" capture="environment" hidden />
-        <div class="dz-actions">
-          <button class="btn" id="btnPick">انتخاب فایل</button>
-          <button class="btn ghost" id="btnCam">دوربین</button>
+      <div id="start" class="start">
+        <div id="dropzone" class="dropzone">
+          <div class="dz-icon">📷</div>
+          <p class="dz-title">عکس اتاق یا نمای ساختمان را بارگذاری کن</p>
+          <p class="dz-sub">کلیک کن، فایل را رها کن، یا با دوربین عکس بگیر</p>
+          <input type="file" id="fileInput" accept="image/*" hidden />
+          <input type="file" id="camInput" accept="image/*" capture="environment" hidden />
+          <div class="dz-actions">
+            <button class="btn" id="btnPick">انتخاب فایل</button>
+            <button class="btn ghost" id="btnCam">📸 دوربین</button>
+          </div>
+        </div>
+
+        <div class="scene-bar">
+          <span class="scene-label">یا یک فضای نمونه را انتخاب کن — نتیجه آنی و دقیق است:</span>
+          <div class="scene-cards">
+            <button class="scene-card" data-scene="living">
+              <span class="sc-emoji">🛋️</span><span>پذیرایی</span>
+            </button>
+            <button class="scene-card" data-scene="bedroom">
+              <span class="sc-emoji">🛏️</span><span>اتاق خواب</span>
+            </button>
+            <button class="scene-card" data-scene="kitchen">
+              <span class="sc-emoji">🍽️</span><span>آشپزخانه</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -67,18 +91,19 @@
 
         <div class="toolbar" id="toolbar">
           <div class="tool-group">
-            <button class="tool active" data-tool="none" id="toolNone">نمایش</button>
-            <button class="tool" data-tool="add" id="toolAdd">➕ افزودن دیوار</button>
-            <button class="tool" data-tool="erase" id="toolErase">➖ پاک‌کردن</button>
+            <button class="tool active" data-tool="none" id="toolNone" title="فقط تماشای تصویر؛ قلم غیرفعال">👁 مشاهده</button>
+            <button class="tool" data-tool="add" id="toolAdd" title="روی دیواری که رنگ نخورده بکش تا اضافه شود">🖌 افزودن دیوار</button>
+            <button class="tool" data-tool="erase" id="toolErase" title="روی جایی که اشتباهی رنگ خورده (مثل کمد) بکش تا حذف شود">🩹 پاک‌کردن</button>
           </div>
           <label class="brush">
-            قلم
+            اندازهٔ قلم
             <input type="range" id="brushSize" min="8" max="90" value="34" />
           </label>
-          <button class="btn tiny ghost" id="btnAuto">تشخیص خودکار مجدد</button>
+          <button class="btn tiny ghost" id="btnAuto">↻ تشخیص خودکار</button>
           <span class="grow"></span>
-          <button class="btn tiny ghost" id="btnNew">عکس جدید</button>
+          <button class="btn tiny ghost" id="btnNew">تصویر جدید</button>
         </div>
+        <p class="tool-hint" id="toolHint"></p>
 
         <div class="ba-row" id="baRow" hidden>
           <span>قبل</span>
@@ -126,9 +151,10 @@
         <button class="btn ghost block" id="btnAddWall" hidden>+ رنگ دیوار بعدی</button>
 
         <div class="result-actions" id="resultActions" hidden>
-          <button class="btn" id="btnDownload">دانلود تصویر</button>
-          <button class="btn ghost" id="btnCard">کارت پیشنهاد رنگ</button>
+          <button class="btn ghost" id="btnDownload" title="فقط همین تصویر با فرمت JPG">⬇️ دانلود عکس</button>
+          <button class="btn" id="btnCard" title="یک تصویر آماده‌ی ارسال به مشتری: نتیجه + نام و کد رنگ‌ها + برآورد رنگ + برند">🖼 کارت پیشنهاد</button>
         </div>
+        <p class="hint" id="cardHint">«دانلود عکس» فقط تصویر نتیجه است. «کارت پیشنهاد» یک تصویر کاملِ آماده‌ی ارسال به مشتری می‌سازد: تصویر + نام و کد رنگ‌ها + برآورد مقدار رنگ + نام.</p>
         <p class="hint">رنگ نمایش‌داده‌شده تقریبی است؛ برای انتخاب نهایی، چیپ رنگ را در نمایندگی ببینید.</p>
       </div>
 

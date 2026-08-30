@@ -131,6 +131,9 @@ async function useScene(name) {
   const holder = document.createElement("div");
   holder.innerHTML = txt;
   const svg = holder.querySelector("svg");
+  svg.setAttribute("width", "1200");
+  svg.setAttribute("height", "900");
+  svg.removeAttribute("style");
   S.mode = "scene";
   S.svg = svg; S.sceneName = name;
   S.W = 1200; S.H = 900;
@@ -143,40 +146,47 @@ async function useScene(name) {
 }
 
 function svgToBlobURL(svg) {
-  const xml = new XMLSerializer().serializeToString(svg);
+  let xml = new XMLSerializer().serializeToString(svg);
+  if (!xml.startsWith("<?xml")) xml = '<?xml version="1.0" encoding="UTF-8"?>' + xml;
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
 }
 
-async function rasterizeScene() {
-  return new Promise((resolve) => {
+function rasterizeSVG() {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const cv = document.createElement("canvas");
       cv.width = S.W; cv.height = S.H;
-      cv.getContext("2d").drawImage(img, 0, 0, S.W, S.H);
-      S.orig = cv;
-      draw(cv);
-      resolve();
+      const c = cv.getContext("2d");
+      c.fillStyle = "#ffffff";
+      c.fillRect(0, 0, S.W, S.H);
+      c.drawImage(img, 0, 0, S.W, S.H);
+      resolve(cv);
     };
+    img.onerror = () => reject(new Error("خطا در بارگذاری فضای نمونه"));
     img.src = svgToBlobURL(S.svg);
   });
 }
 
-function applySceneColor() {
+async function rasterizeScene() {
+  const cv = await rasterizeSVG();
+  S.orig = cv;
+  draw(cv);
+}
+
+async function applySceneColor() {
   if (!S.svg || !S.color) return;
-  S.svg.querySelectorAll(".wall").forEach((el) => (el.setAttribute("fill", S.color.hex)));
-  const img = new Image();
-  img.onload = () => {
-    const cv = document.createElement("canvas");
-    cv.width = S.W; cv.height = S.H;
-    cv.getContext("2d").drawImage(img, 0, 0, S.W, S.H);
-    S.resultURL = cv.toDataURL("image/jpeg", 0.92);
+  S.svg.querySelectorAll(".wall").forEach((el) => el.setAttribute("fill", S.color.hex));
+  try {
+    const cv = await rasterizeSVG();
+    setResultURL(cv.toDataURL("image/jpeg", 0.92));
     draw(cv);
     flashReveal();
     showBA(true);
     $("#resultActions").hidden = false;
-  };
-  img.src = svgToBlobURL(S.svg);
+  } catch (e) {
+    toast(e.message, true);
+  }
 }
 
 /* ---------------- Editor / Canvas ---------------- */
@@ -187,7 +197,7 @@ const pctx = photoCanvas.getContext("2d");
 const mctx = maskCanvas.getContext("2d");
 
 function enterEditor() {
-  $("#dropzone").hidden = true;
+  $("#start").hidden = true;
   $("#editor").hidden = false;
   $("#toolbar").querySelectorAll(".tool, #btnAuto").forEach((b) => (b.style.display = ""));
   sizeCanvases();
@@ -200,8 +210,6 @@ function enterEditor() {
 
 function sizeCanvases() {
   [photoCanvas, maskCanvas].forEach((c) => { c.width = S.W; c.height = S.H; });
-  const wrap = $("#canvasWrap");
-  wrap.style.aspectRatio = `${S.W} / ${S.H}`;
   if (S.orig) draw(S.orig);
   redrawMask();
 }
@@ -215,6 +223,11 @@ function flashReveal() {
   photoCanvas.classList.remove("reveal");
   void photoCanvas.offsetWidth;
   photoCanvas.classList.add("reveal");
+}
+
+function setResultURL(url) {
+  if (S.resultURL && S.resultURL.startsWith("blob:")) URL.revokeObjectURL(S.resultURL);
+  S.resultURL = url;
 }
 
 function redrawMask() {
@@ -306,11 +319,19 @@ maskCanvas.addEventListener("touchstart", startPaint, { passive: false });
 maskCanvas.addEventListener("touchmove", movePaint, { passive: false });
 window.addEventListener("touchend", endPaint);
 
+const TOOL_HINTS = {
+  none: "قلم خاموش است. برای اصلاح نواحیِ رنگ‌شده یکی از حالت‌های «افزودن» یا «پاک‌کردن» را بزن.",
+  add: "🖌 روی هر جایی از دیوار که رنگ نخورده بکش تا به ناحیهٔ رنگ اضافه شود.",
+  erase: "🩹 روی هر چیزی که اشتباهی رنگ خورده (کمد، قاب، مبل) بکش تا از ناحیهٔ رنگ حذف شود.",
+};
+
 function setTool(t) {
   S.tool = t;
   $$(".tool").forEach((b) => b.classList.toggle("active", b.dataset.tool === t));
   maskCanvas.style.cursor = t === "none" ? "default" : "crosshair";
   maskCanvas.style.pointerEvents = t === "none" ? "none" : "auto";
+  const hint = $("#toolHint");
+  if (hint) hint.textContent = S.mode === "scene" ? "" : TOOL_HINTS[t] || "";
   redrawMask();
 }
 
@@ -329,7 +350,7 @@ async function applyColor() {
     const res = await fetch("/api/visualize", { method: "POST", body: fd });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || "خطا در پردازش");
     const blob = await res.blob();
-    S.resultURL = URL.createObjectURL(blob);
+    setResultURL(URL.createObjectURL(blob));
     const bmp = await createImageBitmap(blob);
     draw(bmp);
     flashReveal();
@@ -392,7 +413,7 @@ async function renderMulti() {
     });
     if (!res.ok) throw new Error("خطا در ترکیب دیوارها");
     const blob = await res.blob();
-    S.resultURL = URL.createObjectURL(blob);
+    setResultURL(URL.createObjectURL(blob));
     draw(await createImageBitmap(blob));
     flashReveal();
     showBA(true);
@@ -419,11 +440,13 @@ function updateBA() {
     orig = document.createElement("canvas");
     orig.id = "baOrig";
     orig.width = S.W; orig.height = S.H;
-    orig.style.cssText = "position:absolute;inset:0;margin:auto;max-width:100%;max-height:74vh";
     orig.getContext("2d").drawImage(S.orig, 0, 0, S.W, S.H);
     photoCanvas.parentElement.insertBefore(orig, maskCanvas);
+  } else {
+    orig.width = S.W; orig.height = S.H;
+    orig.getContext("2d").drawImage(S.orig, 0, 0, S.W, S.H);
   }
-  // سمت چپ = بعد، سمت راست = قبل
+  // سمت راست تصویر = «قبل»
   orig.style.clipPath = `inset(0 0 0 ${v}%)`;
 }
 $("#baRange").addEventListener("input", updateBA);
@@ -675,33 +698,14 @@ async function submitLead() {
 
 /* ---------------- Wiring ---------------- */
 
-function initSceneChips() {
-  const wrap = document.createElement("div");
-  wrap.className = "collections";
-  wrap.style.marginBottom = "10px";
-  [
-    ["living", "🛋️ پذیرایی"],
-    ["bedroom", "🛏️ اتاق خواب"],
-    ["kitchen", "🍽️ آشپزخانه"],
-  ].forEach(([id, label]) => {
-    const b = document.createElement("button");
-    b.textContent = label;
-    b.onclick = () => useScene(id);
-    wrap.appendChild(b);
-  });
-  const dz = $("#dropzone");
-  const hint = document.createElement("p");
-  hint.className = "dz-sub";
-  hint.style.marginTop = "18px";
-  hint.textContent = "یا یک فضای نمونه را انتخاب کن:";
-  dz.appendChild(hint);
-  dz.appendChild(wrap);
-}
-
 function wire() {
   $("#btnPick").onclick = (e) => { e.stopPropagation(); $("#fileInput").click(); };
   $("#btnCam").onclick = (e) => { e.stopPropagation(); $("#camInput").click(); };
   $("#dropzone").onclick = () => $("#fileInput").click();
+  $$(".scene-card").forEach((b) => (b.onclick = (e) => {
+    e.stopPropagation();
+    useScene(b.dataset.scene);
+  }));
   $("#fileInput").onchange = (e) => useFile(e.target.files[0]);
   $("#camInput").onchange = (e) => useFile(e.target.files[0]);
 
@@ -757,5 +761,5 @@ function wire() {
 }
 
 wire();
-initSceneChips();
 loadCatalog();
+setTool("none");
