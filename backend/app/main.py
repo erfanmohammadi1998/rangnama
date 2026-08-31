@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import numpy as np
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
@@ -15,8 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageOps
 from pydantic import BaseModel
 
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 from . import db
 from .calc import EstimateInput, estimate
+from .cloud_recolor import CloudRecolorError, available as cloud_available, recolor_with_gemini
 from .palette import catalog, coverage_for, find_color
 from .recolor import mask_preview, recolor_walls
 from .segmentation import region_mask, wall_mask, warmup
@@ -44,7 +48,21 @@ app.add_middleware(
 
 # ---------- کمک‌کارها ----------
 
+_DEBUG_DIR = Path(__file__).resolve().parents[1] / "data" / "debug_uploads"
+
+
+def _debug_save(name: str, data: bytes) -> None:  # موقت: برای دیباگ
+    try:
+        import time
+
+        _DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+        (_DEBUG_DIR / f"{int(time.time() * 1000)}_{name}").write_bytes(data)
+    except Exception:
+        pass
+
+
 def _load_image(data: bytes) -> Image.Image:
+    _debug_save("image_raw.bin", data)
     try:
         img = Image.open(io.BytesIO(data))
         img.load()
@@ -58,6 +76,7 @@ def _load_image(data: bytes) -> Image.Image:
 
 
 def _decode_mask(data: bytes, size: tuple[int, int]) -> np.ndarray:
+    _debug_save("mask_raw.png", data)
     m = Image.open(io.BytesIO(data)).convert("L").resize(size)
     return (np.asarray(m, dtype=np.float32) / 255.0)
 
@@ -125,7 +144,7 @@ async def api_mask(
 @app.post("/api/mask-preview")
 async def api_mask_preview(image: UploadFile = File(...)) -> Response:
     img = _load_image(await image.read())
-    return _jpeg(mask_preview(img, wall_mask(img)))
+    return _jpeg(mask_preview(img, wall_mask(img), refine=False))
 
 
 @app.post("/api/visualize")
@@ -142,10 +161,10 @@ async def api_visualize(
 
     if mask is not None:
         m = _decode_mask(await mask.read(), img.size)
-        refine = False
     else:
         m = wall_mask(img)
-        refine = True
+    # نرم‌کردنِ لبه از قبل داخلِ wall_mask/surface_mask انجام شده؛ دوباره لازم نیست
+    refine = False
 
     out = recolor_walls(
         img, m, hex_color, refine=refine, lighting=lighting,
@@ -156,6 +175,36 @@ async def api_visualize(
         color_code=(entry or {}).get("code"),
         color_name=(entry or {}).get("name"),
         lighting=lighting,
+    )
+    return _jpeg(out)
+
+
+@app.get("/api/visualize-ai/available")
+def api_visualize_ai_available() -> dict:
+    return {"available": cloud_available()}
+
+
+@app.post("/api/visualize-ai")
+async def api_visualize_ai(
+    image: UploadFile = File(...),
+    color: str | None = Form(None),
+    code: str | None = Form(None),
+) -> Response:
+    """رنگ‌آمیزیِ دیوار با مدلِ ابریِ Gemini — دقیقِ‌تر روی موارد سخت (گوشه‌های
+    پیچیده، دیوارِ کم‌کنتراست) ولی نیاز به اینترنت دارد، هزینه‌ی هر درخواست را
+    مصرف می‌کند، و عکس برای پردازش به سرورهای گوگل فرستاده می‌شود."""
+    if not cloud_available():
+        raise HTTPException(503, "سرویسِ ابری تنظیم نشده است (OPENAI_API_KEY)")
+    hex_color, entry = _resolve_color(color, code)
+    img = _load_image(await image.read())
+    try:
+        out = recolor_with_gemini(img, hex_color, (entry or {}).get("name"))
+    except CloudRecolorError as exc:
+        raise HTTPException(502, str(exc))
+    db.log_event(
+        "visualize_ai",
+        color_code=(entry or {}).get("code"),
+        color_name=(entry or {}).get("name"),
     )
     return _jpeg(out)
 

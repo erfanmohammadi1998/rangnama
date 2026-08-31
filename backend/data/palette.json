@@ -1,5 +1,5 @@
 {
-  "_note": "کدها با الگوی کاتالوگ ساخته شده‌اند؛ مقادیر HEX تقریبی‌اند و باید با داده‌ی اسپکتروفتومتر واحد R&D جایگزین شوند.",
+  "_note": "مقادیر HEX تقریبی‌اند و برای استفاده‌ی نهایی باید با داده‌ی اسپکتروفتومترِ واقعیِ محصول جایگزین شوند.",
   "families": [
     { "id": "white",   "name": "سفید و شکسته‌سفید" },
     { "id": "cream",    "name": "کرم و استخوانی" },
@@ -10,13 +10,15 @@
     { "id": "warm",     "name": "گلبهی، صورتی و آجری" },
     { "id": "yellow",   "name": "زرد و خردلی" },
     { "id": "brown",    "name": "قهوه‌ای و شکلاتی" },
+    { "id": "purple",   "name": "بنفش و یاسی" },
     { "id": "dark",     "name": "تیره و زغالی" }
   ],
   "collections": [
     { "id": "living",   "name": "پذیرایی مدرن",   "codes": ["03102 RN", "63140 RN", "43160 RN", "93110 RN"] },
     { "id": "bedroom",  "name": "اتاق خواب آرام",  "codes": ["23120 RN", "33130 RN", "63120 RN", "03104 RN"] },
     { "id": "kids",     "name": "اتاق کودک",       "codes": ["43120 RN", "53110 RN", "73110 RN", "33110 RN"] },
-    { "id": "classic",  "name": "کلاسیک و لوکس",   "codes": ["13150 RN", "83140 RN", "93150 RN", "03106 RN"] }
+    { "id": "classic",  "name": "کلاسیک و لوکس",   "codes": ["13150 RN", "83140 RN", "93150 RN", "03106 RN"] },
+    { "id": "calm",     "name": "آرام‌بخش",         "codes": ["10120 RN", "53120 RN", "43120 RN", "03108 RN"] }
   ],
   "products": [
     { "id": "plastic",  "name": "رنگ پلاستیک",       "finish": "مات",        "coverage_m2_per_l": 9.0 },
@@ -28,47 +30,79 @@
     { "code": "03102 RN", "name": "سفید مهتابی",     "hex": "#EFEEE9", "family": "white",  "product": "plastic" },
     { "code": "03104 RN", "name": "سفید گچی",        "hex": "#F1EDE3", "family": "white",  "product": "plastic" },
     { "code": "03106 RN", "name": "نقره‌فام روشن",    "hex": "#E7E7E4", "family": "white",  "product": "plastic" },
+    { "code": "03108 RN", "name": "سفید یخی",        "hex": "#F7F7F5", "family": "white",  "product": "plastic" },
+    { "code": "03110 RN", "name": "سفید کتان",       "hex": "#EDEAE2", "family": "white",  "product": "plastic" },
+    { "code": "03112 RN", "name": "سفید مروارید",    "hex": "#E9E6DE", "family": "white",  "product": "acrylic" },
+    { "code": "03114 RN", "name": "دوداکرم",         "hex": "#DEDAD0", "family": "white",  "product": "acrylic" },
 
     { "code": "13140 RN", "name": "کرم روشن",        "hex": "#EFE3CC", "family": "cream",  "product": "plastic" },
     { "code": "13150 RN", "name": "استخوانی",        "hex": "#EADFC8", "family": "cream",  "product": "acrylic" },
     { "code": "13160 RN", "name": "نخودی گرم",       "hex": "#E6D6B0", "family": "cream",  "product": "plastic" },
     { "code": "13170 RN", "name": "شنی",             "hex": "#DFCBA5", "family": "cream",  "product": "plastic" },
+    { "code": "13180 RN", "name": "کرم عسلی",        "hex": "#D8BE90", "family": "cream",  "product": "acrylic" },
+    { "code": "13190 RN", "name": "کرم طلایی",       "hex": "#CDAE74", "family": "cream",  "product": "acrylic" },
+    { "code": "13200 RN", "name": "کارامل روشن",     "hex": "#C29D5E", "family": "cream",  "product": "acrylic" },
 
     { "code": "23110 RN", "name": "بژ صدفی",         "hex": "#DED0BC", "family": "greige", "product": "plastic" },
     { "code": "23120 RN", "name": "بژ گرم",          "hex": "#D6C3A9", "family": "greige", "product": "acrylic" },
     { "code": "23130 RN", "name": "خاکی روشن",       "hex": "#C9B48F", "family": "greige", "product": "acrylic" },
     { "code": "23140 RN", "name": "قهوه‌ای شیری",     "hex": "#B9A487", "family": "greige", "product": "acrylic" },
+    { "code": "23150 RN", "name": "خاکی نیزاری",     "hex": "#AC9877", "family": "greige", "product": "acrylic" },
+    { "code": "23160 RN", "name": "بژ سوخته",        "hex": "#9A8564", "family": "greige", "product": "acrylic" },
 
     { "code": "33110 RN", "name": "طوسی مه",         "hex": "#DCDDDA", "family": "gray",   "product": "plastic" },
     { "code": "33120 RN", "name": "طوسی روشن",       "hex": "#C9CBC8", "family": "gray",   "product": "plastic" },
     { "code": "33130 RN", "name": "طوسی متوسط",      "hex": "#A6A9A6", "family": "gray",   "product": "acrylic" },
     { "code": "33140 RN", "name": "دودی",            "hex": "#7C807F", "family": "gray",   "product": "acrylic" },
+    { "code": "33150 RN", "name": "طوسی سربی",       "hex": "#5E6363", "family": "gray",   "product": "acrylic" },
+    { "code": "33160 RN", "name": "طوسی آبی‌فام",     "hex": "#8A939C", "family": "gray",   "product": "acrylic" },
 
     { "code": "43120 RN", "name": "سبز نعنایی روشن",  "hex": "#CBD8C0", "family": "green",  "product": "plastic" },
+    { "code": "43130 RN", "name": "سبز پسته‌ای",       "hex": "#BDCCA9", "family": "green",  "product": "plastic" },
     { "code": "43140 RN", "name": "سبز مریم",         "hex": "#AEBE96", "family": "green",  "product": "acrylic" },
+    { "code": "43150 RN", "name": "سبز شمشادی",       "hex": "#8FA378", "family": "green",  "product": "acrylic" },
     { "code": "43160 RN", "name": "سبز زیتونی",       "hex": "#7E8A5C", "family": "green",  "product": "acrylic" },
+    { "code": "43170 RN", "name": "سبز کاجی",         "hex": "#5F7050", "family": "green",  "product": "acrylic" },
     { "code": "43180 RN", "name": "سبز جنگلی",        "hex": "#4C5A42", "family": "green",  "product": "acrylic" },
+    { "code": "43190 RN", "name": "سبز بطری",         "hex": "#2F3D2C", "family": "green",  "product": "semigloss" },
 
     { "code": "53110 RN", "name": "آبی آسمان روشن",   "hex": "#CFDCE4", "family": "blue",   "product": "plastic" },
     { "code": "53120 RN", "name": "آبی پودری",        "hex": "#A9C1D0", "family": "blue",   "product": "plastic" },
+    { "code": "53130 RN", "name": "آبی یخچالی",       "hex": "#7FA6BB", "family": "blue",   "product": "acrylic" },
     { "code": "53140 RN", "name": "آبی نفتی",         "hex": "#35566B", "family": "blue",   "product": "acrylic" },
     { "code": "53150 RN", "name": "فیروزه‌ای عمیق",    "hex": "#2E6E73", "family": "blue",   "product": "acrylic" },
+    { "code": "53160 RN", "name": "آبی دریایی",       "hex": "#274460", "family": "blue",   "product": "semigloss" },
+    { "code": "53170 RN", "name": "فیروزه‌ای روشن",    "hex": "#5FA5A0", "family": "blue",   "product": "acrylic" },
 
     { "code": "63120 RN", "name": "گلبهی محو",        "hex": "#EBD7C6", "family": "warm",   "product": "plastic" },
     { "code": "63130 RN", "name": "صورتی کهنه",       "hex": "#DCC0B4", "family": "warm",   "product": "plastic" },
     { "code": "63140 RN", "name": "آجری روشن",        "hex": "#C88E70", "family": "warm",   "product": "acrylic" },
     { "code": "63150 RN", "name": "تراکوتا",          "hex": "#A85C43", "family": "warm",   "product": "acrylic" },
+    { "code": "63160 RN", "name": "آجری تیره",        "hex": "#8C4736", "family": "warm",   "product": "acrylic" },
+    { "code": "63170 RN", "name": "صورتی رسی",        "hex": "#C79489", "family": "warm",   "product": "acrylic" },
 
     { "code": "73110 RN", "name": "زرد کاهی",         "hex": "#EDE0B6", "family": "yellow", "product": "plastic" },
+    { "code": "73120 RN", "name": "زرد لیمویی محو",   "hex": "#EAD68F", "family": "yellow", "product": "plastic" },
     { "code": "73130 RN", "name": "زرد آفتابی",       "hex": "#E9C979", "family": "yellow", "product": "plastic" },
+    { "code": "73140 RN", "name": "زرد عسلی",         "hex": "#D9AE55", "family": "yellow", "product": "acrylic" },
     { "code": "73150 RN", "name": "خردلی",            "hex": "#C89B3C", "family": "yellow", "product": "acrylic" },
+    { "code": "73160 RN", "name": "خردلی تیره",       "hex": "#A47F2E", "family": "yellow", "product": "acrylic" },
 
+    { "code": "83120 RN", "name": "قهوه‌ای شیری",      "hex": "#B79A7C", "family": "brown",  "product": "acrylic" },
     { "code": "83130 RN", "name": "قهوه‌ای روشن",      "hex": "#9C7B5B", "family": "brown",  "product": "acrylic" },
     { "code": "83140 RN", "name": "قهوه‌ای دارچینی",   "hex": "#7B5A40", "family": "brown",  "product": "acrylic" },
     { "code": "83150 RN", "name": "شکلاتی",           "hex": "#5A4232", "family": "brown",  "product": "semigloss" },
+    { "code": "83160 RN", "name": "قهوه‌ای تلخ",       "hex": "#3F2E22", "family": "brown",  "product": "semigloss" },
+
+    { "code": "10110 RN", "name": "یاسی محو",         "hex": "#DED3E0", "family": "purple", "product": "plastic" },
+    { "code": "10120 RN", "name": "بنفش کمرنگ",       "hex": "#C7B3CD", "family": "purple", "product": "plastic" },
+    { "code": "10130 RN", "name": "ارغوانی خاک‌گرفته", "hex": "#9C819F", "family": "purple", "product": "acrylic" },
+    { "code": "10140 RN", "name": "بنفش آلبالویی",     "hex": "#6E4F63", "family": "purple", "product": "acrylic" },
 
     { "code": "93110 RN", "name": "ذغالی روشن",       "hex": "#585A5C", "family": "dark",   "product": "acrylic" },
+    { "code": "93130 RN", "name": "خاکستری قیری",     "hex": "#4A4B4D", "family": "dark",   "product": "acrylic" },
     { "code": "93150 RN", "name": "ذغالی",            "hex": "#3E4042", "family": "dark",   "product": "semigloss" },
+    { "code": "93170 RN", "name": "مشکی نرم",         "hex": "#333335", "family": "dark",   "product": "semigloss" },
     { "code": "93180 RN", "name": "شب",               "hex": "#2B2D30", "family": "dark",   "product": "semigloss" }
   ]
 }

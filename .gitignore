@@ -8,6 +8,8 @@ venv/
 # مدل‌ها و کش (حجیم — داخل ریپو نمی‌روند)
 models/
 .cache/
+backend/data/weights/
+backend/data/debug_uploads/
 
 # خروجی‌های تولیدشده و نمونه‌ها
 backend/out/

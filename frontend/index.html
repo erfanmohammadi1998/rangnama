@@ -4,9 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>رنگ‌نما — پیش‌نمای هوشمند رنگ</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -165,13 +162,14 @@
         </div>
 
         <button class="btn block" id="btnApply" disabled>اعمال رنگ روی دیوار</button>
+        <button class="btn block ghost" id="btnApplyAI" hidden title="با هوش مصنوعیِ ابری (Gemini) — دقیق‌تر روی موارد سخت، ولی کندتر، نیاز به اینترنت و هزینه‌بر">✦ دقت بالا (ابری)</button>
 
         <div class="result-actions" id="resultActions" hidden>
           <button class="btn ghost" id="btnDownload" title="فقط همین تصویر با فرمت JPG">⬇️ دانلود عکس</button>
-          <button class="btn" id="btnCard" title="یک تصویر آماده‌ی ارسال به مشتری: نتیجه + نام و کد رنگ‌ها + برآورد رنگ + برند">🖼 کارت پیشنهاد</button>
+          <button class="btn" id="btnCard" title="یک تصویر آماده‌ی ارسال به مشتری: نتیجه + نام و کد رنگ‌ها + برآورد رنگ + برند رنگ‌نما">🖼 کارت پیشنهاد</button>
         </div>
-        <p class="hint" id="cardHint">«دانلود عکس» فقط تصویر نتیجه است. «کارت پیشنهاد» یک تصویر کاملِ آماده‌ی ارسال به مشتری می‌سازد: تصویر + نام و کد رنگ‌ها + برآورد مقدار رنگ + نام.</p>
-        <p class="hint">رنگ نمایش‌داده‌شده تقریبی است؛ برای انتخاب نهایی، چیپ رنگ را در نمایندگی ببینید.</p>
+        <p class="hint" id="cardHint">«دانلود عکس» فقط تصویر نتیجه است. «کارت پیشنهاد» یک تصویر کاملِ آماده‌ی ارسال به مشتری می‌سازد: تصویر + نام و کد رنگ‌ها + برآورد مقدار رنگ + نام رنگ‌نما.</p>
+        <p class="hint">رنگ نمایش‌داده‌شده تقریبی است؛ برای انتخاب نهایی، چیپ رنگ را در نمایندگی/فروشگاه ببینید.</p>
       </div>
 
       <!-- تب محاسبه -->
@@ -190,7 +188,7 @@
 
       <!-- تب مشاوره -->
       <div class="tabpane" data-pane="advice" hidden>
-        <p class="advice-lead">برای دریافت مشاورهٔ رایگان رنگ و معرفی نزدیک‌ترین نمایندگی، اطلاعاتت را بگذار.</p>
+        <p class="advice-lead">برای دریافت مشاورهٔ رایگان رنگ، اطلاعاتت را بگذار — کارشناسانِ ما باهات تماس می‌گیرن.</p>
         <div class="field"><label>نام</label><input class="input" id="lName" /></div>
         <div class="field"><label>شماره تماس</label><input class="input" id="lPhone" inputmode="tel" /></div>
         <div class="field"><label>شهر</label><input class="input" id="lCity" /></div>

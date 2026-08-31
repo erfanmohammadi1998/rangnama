@@ -13,19 +13,21 @@ def _has_guided() -> bool:
 def refine_mask(
     image_rgb: np.ndarray,
     mask: np.ndarray,
-    keep_components: int = 3,
-    min_area_frac: float = 0.004,
+    min_area_frac: float = 0.001,
 ) -> np.ndarray:
-    """ماسک خام مدل را به یک ماسک نرم و چسبیده به لبه‌های واقعی دیوار تبدیل می‌کند.
+    """ماسک را نرم می‌کند و لبه‌اش را به لبه‌ی واقعیِ تصویر می‌چسباند.
 
     مراحل:
-    1. پر کردن حفره‌ها و حذف جزیره‌های کوچک.
-    2. نگه‌داشتن فقط بزرگ‌ترین ناحیه‌های متصل.
-    3. کمی تو رفتن (erode) تا از لبه‌ها فاصله بگیریم.
-    4. سرکوب نواحی‌ای که روشنایی‌شان خیلی با دیوار فرق دارد (سقف/گچبری/پنجرهٔ روشن،
-       در/سایهٔ تیره) — علت اصلی سرریز رنگ.
-    5. guided filter تا لبهٔ ماسک دقیقاً روی لبهٔ واقعی بنشیند.
+    1. پر کردن حفره‌های ریز و حذف نویزِ خیلی کوچک.
+    2. guided filter تا لبهٔ ماسک دقیقاً روی لبهٔ واقعی بنشیند.
     خروجی: float32 در [0, 1].
+
+    توجه: این تابع دیگر «فقط چند تکه‌ی بزرگ را نگه دار» یا «دروازه‌ی روشنایی»
+    ندارد — یک دیوار واقعی می‌تواند به‌خاطر مبلمان/لوستر/لامپ به چند تکه‌ی
+    جداگانه تقسیم شده باشد که همه‌شان باید رنگ بگیرند، و مرزِ سقف/اشیا از قبل
+    توسط کلاس‌های معنایی + MobileSAM در segmentation.py مشخص شده — تکرارِ آن
+    کار اینجا با یک معیارِ خام‌ترِ روشنایی فقط باعثِ افتادنِ تکه‌های درستِ دیوار
+    (مثلاً نزدیکِ نورِ لوستر) می‌شد.
     """
     h, w = mask.shape[:2]
     binary = (mask > 0.5).astype(np.uint8)
@@ -39,40 +41,12 @@ def refine_mask(
 
     num, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
     if num > 1:
-        areas = stats[1:, cv2.CC_STAT_AREA]
-        order = np.argsort(areas)[::-1]
         min_area = min_area_frac * h * w
-        keep = {
-            idx + 1
-            for rank, idx in enumerate(order)
-            if rank < keep_components and areas[idx] >= min_area
-        }
+        keep = {i for i in range(1, num) if stats[i, cv2.CC_STAT_AREA] >= min_area}
         if keep:
             binary = np.isin(labels, list(keep)).astype(np.uint8)
 
-    # روشناییِ مرجعِ دیوار از داخلِ ناحیه (نه لبه‌ها)
-    inner = cv2.erode(binary, kernel, iterations=2)
-    lab = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2LAB)
-    Lc = lab[..., 0].astype(np.float32)
-    ref_region = inner if inner.sum() > 500 else binary
-    wall_L = float(np.median(Lc[ref_region > 0]))
-    wall_std = float(np.std(Lc[ref_region > 0])) + 1e-3
-
-    # هرچه روشنایی از دیوار دورتر باشد، کمتر جزو دیوار است
-    tol = float(np.clip(2.0 * wall_std, 18.0, 34.0))
-    diff = np.abs(Lc - wall_L)
-    lum_gate = np.clip(1.0 - (diff - tol) / (tol * 1.4), 0.0, 1.0)
-
-    # تو رفتن از لبه‌ی سختِ ماسک (بالای تصویر بیشتر — سرریز معمولاً روی سقف است)
-    eroded = cv2.erode(binary, kernel, iterations=2).astype(np.float32)
-    soft = np.minimum(eroded, lum_gate)
-
-    # حذف تکه‌های کوچکِ جدا افتاده بعد از دروازه‌ی روشنایی
-    bwith = (soft > 0.4).astype(np.uint8)
-    nn, lab2, st2, _ = cv2.connectedComponentsWithStats(bwith, connectivity=8)
-    if nn > 1:
-        big = {i + 1 for i in range(nn - 1) if st2[i + 1, cv2.CC_STAT_AREA] >= 0.003 * h * w}
-        soft = soft * np.isin(lab2, list(big)).astype(np.float32)
+    soft = binary.astype(np.float32)
 
     # چسباندن لبه به تصویر
     guide = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
@@ -85,9 +59,6 @@ def refine_mask(
     else:
         soft = cv2.GaussianBlur(soft, (0, 0), radius / 2)
     soft = np.nan_to_num(np.clip(soft, 0.0, 1.0), nan=0.0)
-
-    # دروازه‌ی روشنایی را دوباره اعمال کن (guided filter کمی پخشش کرده)
-    soft = soft * (0.35 + 0.65 * lum_gate)
 
     # جمع‌کردن لبه و نرم‌کردن نهایی
     soft = np.clip((soft - 0.18) / 0.64, 0.0, 1.0)

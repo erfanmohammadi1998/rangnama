@@ -228,13 +228,14 @@ function redrawMask() {
   const img = mctx.createImageData(S.W, S.H);
   const d = img.data;
   const W = S.W;
+  const T = 16; // زیرِ این مقدار، پیکسل عملاً بخشی از ناحیه حساب نمی‌شود
   for (let i = 0; i < S.mask.length; i++) {
-    if (!S.mask[i]) continue;
+    if (S.mask[i] < T) continue;
     // لبهٔ ماسک را پررنگ‌تر نشان بده
     const x = i % W, y = (i / W) | 0;
     const edge =
       x === 0 || y === 0 || x === W - 1 ||
-      !S.mask[i - 1] || !S.mask[i + 1] || !S.mask[i - W] || !S.mask[i + W];
+      S.mask[i - 1] < T || S.mask[i + 1] < T || S.mask[i - W] < T || S.mask[i + W] < T;
     d[i * 4] = cr; d[i * 4 + 1] = cg; d[i * 4 + 2] = cb;
     d[i * 4 + 3] = edge ? 235 : 120;
   }
@@ -248,7 +249,10 @@ function _maskFromBitmap(bmp) {
   tctx.drawImage(bmp, 0, 0, S.W, S.H);
   const d = tctx.getImageData(0, 0, S.W, S.H).data;
   const m = new Uint8ClampedArray(S.W * S.H);
-  for (let i = 0; i < m.length; i++) m[i] = d[i * 4] > 128 ? 1 : 0;
+  // مقدارِ خاکستریِ پیوسته (۰ تا ۲۵۵) حفظ می‌شود، نه فقط سیاه/سفیدِ آستانه‌دار —
+  // سرور لبه‌ها را نرم (guided filter) برمی‌گرداند؛ یک آستانه‌ی سخت اینجا همان
+  // نرمی را از بین می‌برد و می‌تواند لکه‌های ناهموار دورِ اشیا بسازد.
+  for (let i = 0; i < m.length; i++) m[i] = d[i * 4];
   return m;
 }
 
@@ -308,7 +312,7 @@ function paintAt(x, y) {
   const W = S.W, H = S.H;
   if (x < 0 || y < 0 || x >= W || y >= H) return;
   const rad = (S.brush / maskCanvas.getBoundingClientRect().width) * S.W;
-  const val = S.tool === "add" ? 1 : 0;
+  const val = S.tool === "add" ? 255 : 0;
   const seed = S.origData ? [S.origData[(y * W + x) * 4], S.origData[(y * W + x) * 4 + 1], S.origData[(y * W + x) * 4 + 2]] : null;
   const r2 = rad * rad;
   const x0 = Math.max(0, x - rad | 0), x1 = Math.min(W, x + rad | 0);
@@ -333,7 +337,7 @@ function smartFill(x, y) {
   const W = S.W, H = S.H;
   if (x < 0 || y < 0 || x >= W || y >= H) return;
   const seed = [S.origData[(y * W + x) * 4], S.origData[(y * W + x) * 4 + 1], S.origData[(y * W + x) * 4 + 2]];
-  const val = S.tool === "add" ? 1 : 0;
+  const val = S.tool === "add" ? 255 : 0;
   const reach = Math.max(70, (S.brush / maskCanvas.getBoundingClientRect().width) * S.W * 3.5);
   const reach2 = reach * reach;
   const seen = new Uint8Array(W * H);
@@ -441,6 +445,44 @@ async function applyColor(opts = {}) {
   }
 }
 
+// نسخهٔ ابری: کل عکس به مدلِ Gemini سپرده می‌شود (بدون ماسکِ لوکال) — دقیق‌تر
+// روی موارد سخت، ولی کندتر و هزینه‌بر و نیازمندِ اینترنت.
+async function applyColorAI() {
+  if (!S.color || !S.orig) return;
+  spin(true);
+  toast("در حال پردازش با هوش مصنوعیِ ابری… ممکن است کمی طول بکشد");
+  try {
+    const fd = new FormData();
+    fd.append("image", await canvasBlob(S.orig));
+    fd.append("code", S.color.code);
+    const res = await fetch("/api/visualize-ai", { method: "POST", body: fd });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || "خطا در پردازشِ ابری");
+    const blob = await res.blob();
+    setResultURL(URL.createObjectURL(blob));
+    const bmp = await createImageBitmap(blob);
+    draw(bmp);
+    flashReveal();
+    showBA(true);
+    $("#resultActions").hidden = false;
+    setTool("none");
+    toast("انجام شد (نسخهٔ ابری)");
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    spin(false);
+  }
+}
+
+async function checkCloudAvailable() {
+  try {
+    const res = await fetch("/api/visualize-ai/available");
+    const data = await res.json();
+    $("#btnApplyAI").hidden = !data.available;
+  } catch {
+    $("#btnApplyAI").hidden = true;
+  }
+}
+
 /* ---------------- Before / After ---------------- */
 
 function showBA(on) {
@@ -476,7 +518,9 @@ function maskCanvasEl() {
   const c = cv.getContext("2d");
   const img = c.createImageData(S.W, S.H);
   for (let i = 0; i < S.mask.length; i++) {
-    const v = S.mask[i] ? 255 : 0;
+    // مقدارِ پیوسته (۰ تا ۲۵۵) عیناً فرستاده می‌شود — نه سیاه/سفیدِ خالص —
+    // تا نرمیِ لبه‌ای که سرور محاسبه کرده حفظ شود.
+    const v = S.mask[i];
     img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
     img.data[i * 4 + 3] = 255;
   }
@@ -546,6 +590,7 @@ function toast(msg, err) {
 
 function refreshApply() {
   $("#btnApply").disabled = !(S.color && S.mask);
+  $("#btnApplyAI").disabled = !S.color;
 }
 
 function setZoom(z, cx, cy) {
@@ -665,7 +710,7 @@ async function makeCard() {
   c.fillRect(0, 1270, 1080, 80);
   c.fillStyle = "#6c7078";
   c.font = "400 20px Vazirmatn, sans-serif";
-  c.fillText("مشاوره و خرید: نمایندگی‌های مجاز — رنگ نمایش‌داده‌شده تقریبی است", 1040, 1316);
+  c.fillText("رنگ نمایش‌داده‌شده تقریبی است", 1040, 1316);
 
   const a = document.createElement("a");
   a.href = cv.toDataURL("image/png");
@@ -776,6 +821,8 @@ function wire() {
 
   $("#search").oninput = renderSwatches;
   $("#btnApply").onclick = applyColor;
+  $("#btnApplyAI").onclick = applyColorAI;
+  checkCloudAvailable();
   $("#btnDownload").onclick = () => {
     const a = document.createElement("a");
     a.href = S.resultURL || S.orig.toDataURL();

@@ -7,15 +7,18 @@
 | وب‌سرویس | `backend/app/main.py` | همهٔ مسیرهای API + سرو فرانت |
 | ماشین‌حساب | `backend/app/calc.py` | مقدار رنگ از ابعاد اتاق |
 | آمار | `backend/app/db.py` | SQLite، لید فروش و رویدادها |
-| کاتالوگ | `backend/app/palette.py` + `data/palette.json` | رنگ‌ها (نمونه — با داده واقعی عوض شود) |
+| کاتالوگ | `backend/app/palette.py` + `data/palette.json` | رنگ‌ها (نمونه — با کاتالوگ واقعیِ محصول عوض شود) |
 | رابط | `frontend/` | برنامهٔ مشتری + `admin.html` داشبورد |
+| ابری (اختیاری) | `backend/app/cloud_recolor.py` | رنگ‌آمیزی با OpenAI gpt-image-2 — پولی، فقط با `OPENAI_API_KEY` فعال می‌شود |
 
 ## مسیر پردازش تصویر
-عکس → کوچک‌سازی (≤۱۲۸۰px) → Mask2Former (ماسک دیوار) → پالایش ماسک (guided filter، `mask_utils.refine_mask`) → [اصلاح دستی کاربر، اختیاری] → موتور رنگ Lab (`recolor.recolor_walls`: حفظ کانال L، جایگزینی a/b، ترکیب خطی نور) → JPEG.
+عکس → کوچک‌سازی (≤۱۲۸۰px) → Mask2Former (ماسک دیوار) → حذفِ کلاس‌های غیردیوار + محافظِ رنگیِ false-positive → لبه‌گیریِ دقیق با SAM (`sam_refine.py`، فقط تکه‌های معقول، نه کلِ کانتور) → پالایشِ نهاییِ لبه (guided filter، `mask_utils.refine_mask`) → [اصلاح دستی کاربر، اختیاری] → موتور رنگ Lab (`recolor.recolor_walls`: حفظ کانال L، جایگزینی a/b، ترکیب خطی نور) → JPEG.
 
 ## مدل
-- پیش‌فرض: `facebook/mask2former-swin-base-ade-semantic` — Apache-2.0، ~۴۳۰MB، ۵–۸ ثانیه/تصویر روی CPU.
-- سریع (فقط تست): `SEG_MODEL_ID=nvidia/segformer-b0-finetuned-ade-512-512`.
+- پیش‌فرض تشخیصِ دیوار: `facebook/mask2former-swin-large-ade-semantic` — ~۸۰۰MB، ۴۵–۶۰ ثانیه/تصویر روی CPU.
+- سریع‌تر: `SEG_MODEL_ID=facebook/mask2former-swin-base-ade-semantic` (~۴۳۰MB، ۵–۸ ثانیه).
+- سریع‌ترین (فقط تست): `SEG_MODEL_ID=nvidia/segformer-b0-finetuned-ade-512-512`.
+- لبه‌گیری: SAM ViT-B (`segment_anything`، ~۳۷۵MB) — قبلاً MobileSAM بود، روی نواحیِ بزرگ نامطمئن بود.
 - کلاس «دیوار» در ADE20K اندیس ۰ است (`segmentation.WALL_CLASSES`).
 
 ## محدودیت‌ها
