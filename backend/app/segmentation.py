@@ -107,23 +107,42 @@ def surface_mask(image: Image.Image, part: str = "wall") -> np.ndarray:
     import cv2
 
     seg = _semantic_map(image)
-    want: list[int] = []
-    if part in ("wall", "wall_ceiling"):
-        want += list(WALL_CLASSES)
-    if part in ("ceiling", "wall_ceiling"):
-        want += list(CEILING_CLASSES)
-    mask = np.isin(seg, want).astype(np.uint8)
+    h, w = seg.shape
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    junction = max(2, int(min(h, w) * 0.012))
+    jk = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (junction, junction))
 
+    wall_m = np.isin(seg, WALL_CLASSES).astype(np.uint8)
+    ceil_m = np.isin(seg, CEILING_CLASSES).astype(np.uint8)
+
+    if part == "wall":
+        mask = wall_m
+    elif part == "ceiling":
+        mask = ceil_m
+    else:  # wall_ceiling: هر دو را کمی جمع کن تا نوارِ اتصال (کناف/گچبری) رنگ نخورد
+        mask = cv2.erode(wall_m, jk) | cv2.erode(ceil_m, jk)
+
+    # سطوحی که رنگ نمی‌گیرند
     never = list(_NEVER_PAINT)
     if part == "wall":
-        never += list(CEILING_CLASSES)  # وقتی فقط دیوار می‌خواهیم، سقف هم کنار برود
+        never += list(CEILING_CLASSES)
     block = np.isin(seg, never).astype(np.uint8)
+
+    # نوارهای خیلی روشن (گچبری/کناف سفید) در حالت شامل سقف حفظ شوند
+    if part in ("wall_ceiling", "ceiling"):
+        lab = cv2.cvtColor(np.asarray(image.convert("RGB")), cv2.COLOR_RGB2LAB)
+        L = lab[..., 0]
+        region = mask > 0
+        if region.any():
+            bright = (L > np.percentile(L[region], 92) + 12).astype(np.uint8)
+            block = block | bright
+
     if block.any():
-        h, w = seg.shape
         r = max(2, int(min(h, w) * 0.012))
-        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (r, r))
-        block = cv2.dilate(block, k, iterations=1)
+        block = cv2.dilate(block, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (r, r)))
         mask = mask & (1 - block)
+
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k)
     return mask.astype(np.float32)
 
 

@@ -144,7 +144,7 @@ async function useFile(file) {
   await autoMask();
 }
 
-// فضاهای نمونه = عکس واقعیِ لوکس + ماسک از پیش‌محاسبه‌شده (سریع و دقیق).
+// فضاهای نمونه = عکس واقعیِ لوکس + ماسکِ از پیش‌آمادهٔ دقیق (سریع، بدون سرریز رنگ).
 async function useScene(name) {
   spin(true);
   try {
@@ -156,17 +156,9 @@ async function useScene(name) {
     S.orig = cv; S.W = bmp.width; S.H = bmp.height;
     S.svg = null; S.sceneName = name;
     S.resultURL = null; S.baShown = false; S.surface = "wall";
+    $$("#surface button").forEach((b) => b.classList.toggle("active", b.dataset.p === "wall"));
     enterEditor();
-
-    const mbmp = await createImageBitmap(await (await fetch(`/scenes/${name}.mask.png`)).blob());
-    const t = document.createElement("canvas");
-    t.width = S.W; t.height = S.H;
-    const tc = t.getContext("2d");
-    tc.drawImage(mbmp, 0, 0, S.W, S.H);
-    const md = tc.getImageData(0, 0, S.W, S.H).data;
-    S.mask = new Uint8ClampedArray(S.W * S.H);
-    for (let i = 0; i < S.mask.length; i++) S.mask[i] = md[i * 4] > 128 ? 1 : 0;
-    setTool("none");
+    await autoMask();
     if (S.color) applyColor();
   } catch (e) {
     toast("بارگذاری فضای نمونه ناموفق بود", true);
@@ -249,23 +241,35 @@ function redrawMask() {
   mctx.putImageData(img, 0, 0);
 }
 
+function _maskFromBitmap(bmp) {
+  const tmp = document.createElement("canvas");
+  tmp.width = S.W; tmp.height = S.H;
+  const tctx = tmp.getContext("2d");
+  tctx.drawImage(bmp, 0, 0, S.W, S.H);
+  const d = tctx.getImageData(0, 0, S.W, S.H).data;
+  const m = new Uint8ClampedArray(S.W * S.H);
+  for (let i = 0; i < m.length; i++) m[i] = d[i * 4] > 128 ? 1 : 0;
+  return m;
+}
+
 async function autoMask() {
   if (S.mode !== "photo") return;
   spin(true);
   try {
-    const fd = new FormData();
-    fd.append("image", await canvasBlob(S.orig));
-    fd.append("part", S.surface);
-    const res = await fetch("/api/mask", { method: "POST", body: fd });
-    if (!res.ok) throw new Error("تشخیص دیوار ناموفق بود");
-    const bmp = await createImageBitmap(await res.blob());
-    const tmp = document.createElement("canvas");
-    tmp.width = S.W; tmp.height = S.H;
-    const tctx = tmp.getContext("2d");
-    tctx.drawImage(bmp, 0, 0, S.W, S.H);
-    const d = tctx.getImageData(0, 0, S.W, S.H).data;
-    S.mask = new Uint8ClampedArray(S.W * S.H);
-    for (let i = 0; i < S.mask.length; i++) S.mask[i] = d[i * 4] > 128 ? 1 : 0;
+    let bmp;
+    if (S.sceneName) {
+      // ماسکِ از پیش‌آمادهٔ فضای نمونه برای همان حالتِ سطح
+      const suffix = S.surface === "wall" ? "" : `.${S.surface}`;
+      bmp = await createImageBitmap(await (await fetch(`/scenes/${S.sceneName}${suffix}.mask.png`)).blob());
+    } else {
+      const fd = new FormData();
+      fd.append("image", await canvasBlob(S.orig));
+      fd.append("part", S.surface);
+      const res = await fetch("/api/mask", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("تشخیص دیوار ناموفق بود");
+      bmp = await createImageBitmap(await res.blob());
+    }
+    S.mask = _maskFromBitmap(bmp);
     setTool("none");
     redrawMask();
   } catch (e) {
