@@ -1,54 +1,99 @@
-# 🎨 رنگ‌نما
+<div align="center">
 
-### پیش‌نمایِ هوشمندِ رنگِ ساختمانی با هوش مصنوعی — یک عکس، چند ثانیه، دیوارِ رنگ‌شده
+# 🎨 Rangnama
 
+### AI paint visualizer: one photo, a few seconds, a freshly painted wall
+
+**Upload a photo of a room or facade, pick a color from the catalog, and see the wall repainted, with the photo's real light, shadows and texture preserved.**
+
+![Python](https://img.shields.io/badge/Python-3.10%E2%80%933.14-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white)
+![Mask2Former](https://img.shields.io/badge/Segmentation-Mask2Former-6f42c1)
+![SAM](https://img.shields.io/badge/Edges-Segment_Anything-0467DF?logo=meta&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?logo=opencv&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+
+<br>
+
+<img src="docs/screenshots/showcase.webp" alt="Rangnama before/after recoloring" width="100%">
+
+</div>
 
 ---
 
-مشتری فقط یک عکس از اتاق یا نمای ساختمانش می‌گذارد (یا یکی از فضاهای نمونه را انتخاب
-می‌کند)؛ هوش مصنوعی خودش دیوارها را تشخیص می‌دهد و در چند ثانیه، دیوار را با هر رنگی از
-کاتالوگ رنگ می‌کند — با حفظِ کاملِ نور، سایه و بافتِ واقعیِ همان عکس. نتیجه دقیقاً همان
-چیزی است که مشتری قرار است روی دیوارِ واقعی‌اش ببیند، نه یک شبیه‌سازیِ مصنوعی و کارتونی.
+## 📌 Overview
 
-## چرا رنگ‌نما؟
+Most paint visualizers either use cartoon-like rooms or pour a flat color over the wall, which wipes out the real lighting and makes the result unconvincing. Customers end up choosing paint from tiny swatches and **guessing**.
 
-- 🧠 **واقعاً هوشمند، نه فقط رنگ‌ریزی** — مدل صحنه را می‌فهمد: مبلمان، لوستر، پنجره، قاب
-  و سقف را می‌شناسد و فقط دیوار را رنگ می‌کند؛ نور و سایه‌ی اصلیِ عکس دست‌نخورده می‌ماند.
-- ⚡️ **همون‌جا، بدون صف انتظار** — پردازش کاملاً لوکال است؛ نه آپلود به سرورهای شخص ثالث،
-  نه هزینه‌ی هر تصویر، نه وابستگی به اینترنت (به‌جز اولین اجرا برای دانلود مدل).
-- 🔒 **حریمِ خصوصیِ مشتری محفوظ** — عکسِ خانه‌ی مشتری هیچ‌وقت از سیستمِ شما خارج نمی‌شود؛
-  همه‌چیز روی همان سرور اجرا می‌شود.
-- 🖌️ **قلمِ هوشمند برای اصلاحِ سریع** — یک کلیک روی مبل یا قاب کافیست تا از رنگ حذف شود؛
-  اصلاح‌ها آنیِ‌ آنی اعمال می‌شوند.
-- 💰 **رایگان و بدون سقف** — بدون هزینه‌ی API، بدون محدودیت در تعداد عکس. برای مواردی که
-  دقتِ فوق‌العاده لازم است، یک حالتِ ابریِ اختیاری (پولی، جداگانه) هم قابل‌فعال‌سازی است.
-- 📊 **ابزار کاملِ فروش، نه فقط یک فیلتر** — ماشین‌حسابِ مقدارِ رنگِ لازم، کارتِ پیشنهادِ
-  آماده‌ی ارسال به مشتری، فرمِ ثبتِ لید، و داشبوردِ مدیریتی برای دیدنِ روندِ استفاده.
+Rangnama understands the scene. A semantic segmentation model finds the walls (and ceiling), separates them from furniture, windows, frames and lamps, and a color engine working in **Lab space** recolors only the wall while keeping the photo's luminance, shadows and texture. Everything runs **locally on the seller's server**: no per-image fees, and customers' photos never leave the premises.
 
-## امکانات
+> **Result:** customers stop guessing from swatches and see the actual color on their own wall, while the seller gets sales data on which colors are trending.
 
-| بخش | توضیح |
+## ✨ Features
+
+| | |
 |---|---|
-| تشخیص هوشمند دیوار | مدل Mask2Former + لبه‌گیریِ دقیق با SAM + حذف کلاس‌های غیردیوار + محافظِ رنگی |
-| رنگ‌آمیزی واقع‌گرایانه | فضای رنگی Lab + حفظ بافت/کنتراست + guided-filter روی لبه‌ها + ترکیب در فضای خطی نور |
-| قلم هوشمند | کلیک = انتخاب هوشمندِ همان تکه؛ کشیدن = قلمِ رنگ‌آگاه (فقط پیکسل‌های هم‌رنگ) |
-| اصلاح خودکار | رها کردن قلم = به‌روزرسانیِ آنی |
-| سطح رنگ‌شونده | دیوار / دیوار + سقف / فقط سقف (با حفظ کناف و گچبری) |
-| حالت نور محیط | طبیعی / گرم / سرد / شب |
-| شدت رنگ | اسلایدر ۴۰٪ تا ۱۰۰٪ |
-| بزرگ‌نمایی | اسلایدر + دکمه + چرخ ماوس + کشیدن برای جابه‌جایی، کنار دکمهٔ تمام‌صفحه |
-| فضاهای نمونه | ۳ عکس داخلیِ لوکس واقعی با ماسکِ از پیش‌آماده — نتیجهٔ آنی |
-| مقایسهٔ قبل و بعد | اسلایدر روی تصویر |
-| ماشین‌حساب رنگ | ابعاد اتاق → لیتر، تعداد حلب، برآورد هزینه |
-| کارت پیشنهاد رنگ | تصویر قابل‌اشتراک شامل نتیجه + کدهای رنگ + برآورد |
-| فرم مشاوره (لید فروش) | ثبت شماره‌ی مشتری برای پیگیری |
-| داشبورد مدیریت (`/admin`) | تعداد استفاده، پرطرفدارترین رنگ‌ها، روند ۱۴ روزه، لیدها |
-| حالتِ ابریِ اختیاری | برای موارد سختِ نور/زاویه، رنگ‌آمیزی با یک مدلِ چندوجهیِ ابری (پولی) |
-| تم دارک/روشن | پیش‌فرض دارک، با کلید تعویض |
+| 🧠 **Smart wall detection** | Mask2Former (ADE20K) + SAM edge refinement + removal of non-wall classes + luminance gate |
+| 🖌️ **Realistic recoloring** | Lab color space, texture/contrast preservation, guided filter on edges, linear-light blending |
+| ✏️ **Smart brush** | Click = select the whole region; drag = color-aware brush; changes apply as soon as you release |
+| 🏠 **Paintable surface** | Wall · wall + ceiling · ceiling only (molding and cornices are kept) |
+| 💡 **Ambient lighting** | Natural · warm · cool · night, plus a color-strength slider (40–100%) |
+| ↔️ **Before / after** | Comparison slider on the image, zoom and fullscreen |
+| 🖼️ **Sample spaces** | 3 real interior photos with precomputed masks for instant results |
+| 🧮 **Paint calculator** | Room size → liters, number of cans and estimated cost |
+| 🧾 **Proposal card** | Shareable image with the result, color codes and estimate |
+| 📇 **Lead capture** | Consultation request form for sales follow-up |
+| 📊 **Admin dashboard** | Usage, most popular colors, 14-day trend and leads (`/admin`) |
+| ☁️ **Optional cloud mode** | For hard lighting/angles, recolor with a multimodal cloud model (paid, separate button) |
+| 🌗 **Dark / light theme** | Dark by default, with a toggle |
 
-## راه‌اندازی
+## 📸 Screenshots
 
-پیش‌نیاز: **Python 3.10–3.14** و **Git**. (کارت گرافیک اختیاری.)
+### Recoloring
+
+<table>
+  <tr>
+    <td width="50%"><b>Living room: before / after</b><br><img src="docs/screenshots/living-before-after.webp" alt="Living room before/after"></td>
+    <td width="50%"><b>Kitchen: wall + ceiling</b><br><img src="docs/screenshots/kitchen-wall-ceiling.webp" alt="Kitchen wall and ceiling"></td>
+  </tr>
+  <tr>
+    <td><b>Bedroom: warm ambient light</b><br><img src="docs/screenshots/bedroom-warm-light.webp" alt="Bedroom warm light"></td>
+    <td><b>Start screen: upload a photo or pick a sample space</b><br><img src="docs/screenshots/start.webp" alt="Start screen"></td>
+  </tr>
+</table>
+
+### Sales tools
+
+<table>
+  <tr>
+    <td width="50%"><b>Paint calculator</b><br><img src="docs/screenshots/paint-calculator.webp" alt="Paint calculator"></td>
+    <td width="50%"><b>Consultation request (lead)</b><br><img src="docs/screenshots/consultation-lead.webp" alt="Consultation form"></td>
+  </tr>
+  <tr>
+    <td><b>Admin dashboard</b><br><img src="docs/screenshots/admin-dashboard.webp" alt="Admin dashboard"></td>
+    <td><b>Light theme</b><br><img src="docs/screenshots/light-theme.webp" alt="Light theme"></td>
+  </tr>
+</table>
+
+## ⚙️ How it works
+
+```mermaid
+flowchart LR
+    A[📷 Photo] --> B[Mask2Former<br/>semantic segmentation]
+    B --> C[Wall / ceiling mask<br/>minus non-wall classes]
+    C --> D[SAM edge refinement<br/>+ luminance gate]
+    D --> E[Lab recoloring<br/>keep luminance & texture]
+    E --> F[Guided filter +<br/>linear-light blend]
+    F --> G[🖼️ Result]
+    H[✏️ Smart brush] -.-> C
+```
+
+## 🚀 Getting started
+
+Requirements: **Python 3.10–3.14** and **Git** (a GPU is optional).
+
+**Windows**
 
 ```powershell
 cd backend
@@ -57,7 +102,7 @@ python -m venv .venv
 .\run.ps1
 ```
 
-روی لینوکس/مک به‌جای دو خط آخر:
+**Linux / macOS**
 
 ```bash
 cd backend
@@ -66,87 +111,92 @@ python3 -m venv .venv
 PYTHONUTF8=1 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-مرورگر: <http://localhost:8000>  ·  داشبورد: <http://localhost:8000/admin>
+App: <http://localhost:8000> · Dashboard: <http://localhost:8000/admin>
 
-> - اولین اجرا مدل‌های تشخیصِ دیوار (Mask2Former، ~۸۰۰ مگابایت) و لبه‌گیری (SAM، ~۳۷۵
->   مگابایت) را از اینترنت دانلود می‌کنند؛ بعد از آن کاملاً آفلاین کار می‌کند.
-> - CPU: هر عکس تقریباً ۴۵–۶۰ ثانیه (مدل‌های دقیق‌تر، کندتر). GPU: چند ثانیه.
->   فضاهای نمونه و اصلاح با قلم همیشه آنی‌اند.
-> - برای CPU ضعیف/دموی سریع، مدل سبک‌تر: `$env:SEG_MODEL_ID="facebook/mask2former-swin-base-ade-semantic"`
->   یا حتی سبک‌تر: `nvidia/segformer-b0-finetuned-ade-512-512`
-> - ویندوز: `PYTHONUTF8=1` لازم است (`run.ps1` خودش ست می‌کند).
-> - فایل `backend/data/analytics.sqlite` (لیدهای فروش) در گیت نیست — لوکالِ هر سرور است.
-> - برای حالتِ ابریِ اختیاری (دقتِ بالاتر با هزینه)، `OPENAI_API_KEY` را در `backend/.env` بگذار.
+> - The first run downloads the wall-detection model (Mask2Former, ~800 MB) and the edge model (SAM, ~375 MB); after that it works fully offline.
+> - CPU: about 45–60 s per photo. GPU: a few seconds. Sample spaces and brush corrections are always instant.
+> - For a weak CPU or a quick demo, use a lighter model: `SEG_MODEL_ID=facebook/mask2former-swin-base-ade-semantic`.
+> - For the optional cloud mode, put `OPENAI_API_KEY` in `backend/.env`.
 
-## اجرا با Docker (برای سرورِ شرکت)
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-مدل داخل ایمیج بسته می‌شود؛ روی سرورِ بدون اینترنت هم بالا می‌آید.
+The model is baked into the image, so it also runs on servers without internet access.
 
-## API
+## 🔌 API
 
-| مسیر | کار |
+| Endpoint | Purpose |
 |---|---|
-| `GET /api/catalog` | کاتالوگ رنگ: خانواده‌ها، مجموعه‌ها، محصولات، رنگ‌ها |
-| `POST /api/mask` | تشخیص سطح → PNG (سفید = سطح)؛ پارامتر `part` = `wall`\|`ceiling`\|`wall_ceiling`؛ با `x,y` فقط همان ناحیه |
-| `POST /api/visualize` | عکس + کد رنگ (+ ماسک، `lighting`، `strength`) → JPEG |
-| `POST /api/visualize-ai` | عکس + کد رنگ → JPEG (حالتِ ابری، پولی) |
-| `POST /api/visualize-multi` | چند سطح با رنگ‌های مختلف (JSON) |
-| `POST /api/estimate` | ابعاد اتاق → مقدار رنگ |
-| `POST /api/lead` | ثبت درخواست مشاوره |
-| `GET /api/stats` | آمار داشبورد |
+| `GET /api/catalog` | Color catalog: families, collections, products, colors |
+| `POST /api/mask` | Surface detection → PNG mask; `part` = `wall` \| `ceiling` \| `wall_ceiling`; `x,y` for a single region |
+| `POST /api/visualize` | Photo + color code (+ mask, `lighting`, `strength`) → JPEG |
+| `POST /api/visualize-ai` | Photo + color code → JPEG (cloud mode) |
+| `POST /api/visualize-multi` | Several surfaces with different colors (JSON) |
+| `POST /api/estimate` | Room dimensions → paint quantity |
+| `POST /api/lead` | Submit a consultation request |
+| `GET /api/stats` | Dashboard statistics |
 
-## لایسنس مدل‌ها
+## 📁 Project structure
 
-- **پیش‌فرض تشخیصِ دیوار** `facebook/mask2former-swin-large-ade-semantic` — از خانوادهٔ Mask2Former، مناسب استفادهٔ تجاری. برای دموی سریع‌تر: نسخهٔ `swin-base` (کوچک‌تر و سریع‌تر).
-- گزینهٔ سریع‌تر `nvidia/segformer-*` — برای استفادهٔ تجاری محدودیت دارد؛ فقط برای تست محلی.
-- **لبه‌گیری** `facebook/segment-anything` (SAM ViT-B) — Apache-2.0، مناسب استفادهٔ تجاری.
-- عکس‌های فضاهای نمونه: Pexels (رایگان، تجاری) — جزئیات در `frontend/scenes/CREDITS.md`.
-
-## داده‌های نمونه — قبل از انتشار جایگزین شوند
-
-`backend/data/palette.json` یک کاتالوگ نمونه‌ی ۶۸ رنگی است و **مقادیر HEX تقریبی‌اند**.
-پیش از فروش/انتشارِ نهایی، با دادهٔ اسپکتروفتومترِ واقعیِ محصول جایگزین شود.
-
-## ساختار
-
-```
+```text
 backend/app/
-  main.py          API + سرو فرانت
-  segmentation.py  تشخیص سطح (Mask2Former / SegFormer) + surface_mask
-  sam_refine.py    لبه‌گیریِ دقیقِ ماسک با SAM
-  recolor.py       موتور رنگ‌آمیزی Lab
-  cloud_recolor.py رنگ‌آمیزیِ ابری (اختیاری، پولی)
-  mask_utils.py    تمیزکاری و لبه‌گیری ماسک
-  calc.py          ماشین‌حساب رنگ
-  db.py            آمار و لید (SQLite)
-  palette.py       کاتالوگ رنگ
-  run.ps1          اجرای سرور روی ویندوز
+  main.py           API + serves the frontend
+  segmentation.py   surface detection (Mask2Former / SegFormer) + surface_mask
+  sam_refine.py     precise mask edges with SAM
+  recolor.py        Lab recoloring engine
+  cloud_recolor.py  optional cloud recoloring
+  mask_utils.py     mask cleanup and edge refinement
+  calc.py           paint calculator
+  db.py             statistics and leads (SQLite)
+  palette.py        color catalog
+backend/tools/gen_scene_masks.py   regenerate sample spaces and their masks
 frontend/
-  index.html  style.css  app.js       برنامهٔ اصلی
-  admin.html  admin.js                داشبورد
-  scenes/*.jpg  scenes/*.mask.png      فضاهای نمونه + ماسک آماده (۳ حالت سطح)
-Dockerfile  docker-compose.yml
-ARCHITECTURE.md                        یادداشت فنی کوتاه
+  index.html  style.css  app.js    main app
+  admin.html  admin.js             dashboard
+  scenes/                          sample photos + precomputed masks (3 surface modes)
+Dockerfile  docker-compose.yml  ARCHITECTURE.md
 ```
 
-## کارهای بعدی (نقشهٔ راه)
+## 📄 Models, data and license
 
-- [ ] جایگزینی پالت با کاتالوگ واقعیِ محصول (کد + LAB اسپکترو)
-- [ ] احراز هویت برای داشبورد مدیریت و `/api/stats`
-- [ ] اطلاع‌رسانی خودکارِ لیدِ جدید به ایمیل/تلگرام
-- [ ] پنل ادمین برای افزودن رنگ و فضای نمونه بدون تغییر کد
-- [ ] ویجت قابل‌جاسازی (`<iframe>`) در سایتِ فروشنده و اپ نمایندگی‌ها
-- [ ] نسخهٔ سبک داخل مرورگر (transformers.js) برای صفر کردن بار سرور
-- [ ] HTTPS/دامنه (دوربین موبایل بدون آن کار نمی‌کند)
+- Wall detection: `facebook/mask2former-swin-large-ade-semantic` (Mask2Former family, suitable for commercial use).
+- Edge refinement: `facebook/segment-anything` (SAM ViT-B, Apache-2.0).
+- Sample-space photos: Pexels (free for commercial use); see [`frontend/scenes/CREDITS.md`](frontend/scenes/CREDITS.md).
+- `backend/data/palette.json` is a 68-color **sample** catalog with approximate HEX values; replace it with real spectrophotometer data before production.
+
+© 2026 Erfan Mohammadi. All rights reserved.
+
+## 🗺️ Roadmap
+
+- [ ] Real product catalog (codes + spectrophotometer Lab values)
+- [ ] Authentication for the admin dashboard and `/api/stats`
+- [ ] Automatic notification of new leads (email / Telegram)
+- [ ] Admin panel to add colors and sample spaces without code changes
+- [ ] Embeddable widget (`<iframe>`) for seller websites
+- [ ] In-browser lightweight version (transformers.js) to remove server load
+
+## 👨‍💻 Author
+
+**Erfan Mohammadi**
+
+[![Website](https://img.shields.io/badge/Website-erfanmohammadi.ir-2563eb)](https://erfanmohammadi.ir/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-erfan--mohammadi77-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/erfan-mohammadi77/)
+[![GitHub](https://img.shields.io/badge/GitHub-erfanmohammadi1998-181717?logo=github)](https://github.com/erfanmohammadi1998)
 
 ---
 
-<div align="center">
+<div dir="rtl">
 
-**رنگ‌نما**
+## 🇮🇷 خلاصه فارسی
+
+**رنگ‌نما: پیش‌نمای هوشمند رنگ ساختمانی با هوش مصنوعی.** مشتری یک عکس از اتاق یا نمای ساختمان می‌گذارد (یا یکی از فضاهای نمونه را انتخاب می‌کند)؛ هوش مصنوعی دیوارها را تشخیص می‌دهد و در چند ثانیه آن‌ها را با رنگ انتخابی از کاتالوگ رنگ می‌کند، با حفظ کامل نور، سایه و بافت واقعی عکس.
+
+- تشخیص هوشمند دیوار و سقف (Mask2Former + SAM) و رنگ‌آمیزی واقع‌گرایانه در فضای Lab
+- قلم هوشمند، مقایسهٔ قبل و بعد، حالت‌های نور محیط و شدت رنگ
+- ماشین‌حساب رنگ، کارت پیشنهاد، فرم ثبت لید و داشبورد مدیریت
+- پردازش کاملاً لوکال روی سرور فروشنده؛ بدون هزینهٔ هر تصویر و بدون خروج عکس مشتری
 
 </div>
